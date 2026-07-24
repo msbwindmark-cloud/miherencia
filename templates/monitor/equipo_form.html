@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}{{ accion }} Equipo - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1><i class="bi bi-people"></i> {{ accion }} Equipo</h1>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-custom">
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3"><label class="form-label fw-semibold">Nombre del Equipo</label>{{ form.nombre }}</div>
+                        <div class="mb-3"><label class="form-label fw-semibold">Descripción</label>{{ form.descripcion }}</div>
+                        <div class="mb-3"><label class="form-label fw-semibold">Edificios Asignados</label>{{ form.edificios }}</div>
+                        <div class="mb-4"><label class="form-label fw-semibold">Miembros</label>{{ form.miembros }}</div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'monitor:equipo_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-2"></i>Volver</a>
+                            <button type="submit" class="btn btn-accent btn-lg"><i class="bi bi-check-lg me-2"></i>{{ accion }} Equipo</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

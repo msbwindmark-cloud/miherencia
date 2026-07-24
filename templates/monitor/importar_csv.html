@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Importar Datos - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1><i class="bi bi-upload"></i> Importar Datos CSV</h1>
+        <p>{{ edificio.nombre }} - Importa datos de sensores desde un archivo</p>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-custom">
+                <div class="card-body p-4">
+                    <div class="alert alert-info alert-custom mb-4">
+                        <h6 class="fw-bold"><i class="bi bi-info-circle me-2"></i>Formato del archivo CSV</h6>
+                        <p class="mb-1">El archivo debe tener el siguiente formato:</p>
+                        <code>valor, fecha (YYYY-MM-DD HH:MM:SS)</code><br>
+                        <code>23.5, 2026-07-21 10:30:00</code><br>
+                        <code>24.1, 2026-07-21 11:00:00</code>
+                        <p class="mt-2 mb-0"><small>La fecha es opcional. Si se omite, se usa la fecha actual.</small></p>
+                    </div>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Sensor destino</label>
+                            {{ form.sensor }}
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Archivo CSV</label>
+                            {{ form.archivo }}
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-2"></i>Volver</a>
+                            <button type="submit" class="btn btn-accent btn-lg"><i class="bi bi-upload me-2"></i>Importar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

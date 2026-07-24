@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Reportes Ciudadanos - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-flag"></i> Reportes Ciudadanos</h1>
+                <p>Reportes recibidos de ciudadanos sobre el estado del patrimonio</p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if edificio %}
+                <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-accent me-2">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-custom alert-dismissible fade show">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if reportes %}
+    <div class="card-custom">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Título</th>
+                            <th>Ciudadano</th>
+                            <th>Edificio</th>
+                            <th>Tipo</th>
+                            <th>Estado</th>
+                            <th>Votos</th>
+                            <th>Fecha</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reportes %}
+                        <tr>
+                            <td class="fw-semibold">{{ r.titulo }}</td>
+                            <td>{{ r.ciudadano_nombre }}</td>
+                            <td>{{ r.edificio.nombre }}</td>
+                            <td>
+                                <span class="badge rounded-pill {% if r.tipo == 'dano' %}bg-danger{% elif r.tipo == 'vandalismo' %}bg-warning text-dark{% elif r.tipo == 'limpieza' %}bg-info{% elif r.tipo == 'iluminacion' %}bg-warning text-dark{% elif r.tipo == 'accesibilidad' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                    {{ r.get_tipo_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill {% if r.estado == 'resuelto' %}bg-success{% elif r.estado == 'en_progreso' %}bg-info{% elif r.estado == 'revisado' %}bg-primary{% elif r.estado == 'rechazado' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                    {{ r.get_estado_display }}
+                                </span>
+                            </td>
+                            <td class="fw-bold">{{ r.votos }}</td>
+                            <td>{{ r.fecha_creacion|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if r.estado != 'resuelto' %}
+                                <a href="{% url 'monitor:reporte_ciudadano_responder' pk=r.pk %}" class="btn btn-sm btn-accent">
+                                    <i class="bi bi-reply"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-flag" style="color:var(--accent)"></i>
+        <h4>Sin reportes ciudadanos</h4>
+        <p class="text-muted">Aún no se han recibido reportes de ciudadanos</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Huella CO2 - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-cloud-haze"></i> Huella de Carbono - {{ edificio.nombre }}</h2>
+    <a href="{% url 'monitor:edificio_detail' edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center">
+            <i class="bi bi-fuel Pump display-4" style="color:var(--accent);"></i>
+            <h2 class="mt-2" style="color:var(--accent);">{{ total_co2|floatformat:1 }}</h2>
+            <p class="text-muted mb-0">toneladas CO2/año</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center">
+            <i class="bi bi-lightning display-4" style="color:var(--gold);"></i>
+            <h2 class="mt-2" style="color:var(--gold);">{{ total_electricidad|floatformat:0 }}</h2>
+            <p class="text-muted mb-0">kWh electricidad/año</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center">
+            <i class="bi bi-sun display-4" style="color:var(--success);"></i>
+            <h2 class="mt-2" style="color:var(--success);">{{ total_solar|floatformat:0 }}</h2>
+            <p class="text-muted mb-0">kWh solar producidos</p>
+        </div>
+    </div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="glass-card p-3">
+            <h5>Evolucion Mensual CO2</h5>
+            <canvas id="co2Chart" height="200"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="glass-card p-3">
+            <h5>Indicadores</h5>
+            {% if total_electricidad > 0 %}
+            {% widthratio total_solar total_electricidad 100 as ahorro_pct %}
+            <p><strong>Ahorro solar:</strong> <span style="color:var(--success);">{{ ahorro_pct }}%</span></p>
+            {% endif %}
+            <p><strong>Emisiones:</strong> {% if total_co2 < 10 %}<span class="badge bg-success">Excelente</span>{% elif total_co2 < 50 %}<span class="badge bg-warning">Moderado</span>{% else %}<span class="badge bg-danger">Alto</span>{% endif %}</p>
+            <hr style="border-color: rgba(255,255,255,0.1);">
+            <h6>Recomendaciones IA:</h6>
+            <ul class="small">
+                <li>Instalar paneles solares en cubierta</li>
+                <li>Mejorar aislamiento termico</li>
+                <li>Sustituir iluminacion por LED</li>
+                <li>Sistema de recuperacion de calor</li>
+            </ul>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('co2Chart').getContext('2d');
+const meses = [{% for r in registros %}'{{ r.mes }}',{% endfor %}];
+const co2Data = [{% for r in registros %}{{ r.emisiones_co2 }},{% endfor %}];
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: meses,
+        datasets: [{
+            label: 'CO2 (toneladas)',
+            data: co2Data,
+            backgroundColor: co2Data.map(v => v > 5 ? 'rgba(233,69,96,0.7)' : 'rgba(212,168,83,0.7)'),
+            borderColor: co2Data.map(v => v > 5 ? '#e94560' : '#d4a853'),
+            borderWidth: 1, borderRadius: 8,
+        }]
+    },
+    options: { responsive: true, plugins: { legend: { labels: { color: '#ccc' } } }, scales: { x: { ticks: { color: '#999' } }, y: { ticks: { color: '#999' } } } }
+});
+</script>
+{% endblock %}

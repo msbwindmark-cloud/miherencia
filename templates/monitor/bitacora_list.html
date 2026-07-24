@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Bitacora de Obras{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-journal-text"></i> Bitacora de Obras</h2>
+</div>
+<div class="timeline">
+    {% for r in registros %}
+    <div class="timeline-item mb-4">
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h6 style="color:var(--gold);"><span class="badge" style="background:{% if r.tipo == 'inicio' %}#28a745{% elif r.tipo == 'avance' %}#17a2b8{% elif r.tipo == 'problema' %}var(--accent){% elif r.tipo == 'solucion' %}#28a745{% elif r.tipo == 'material' %}#ffc107{% elif r.tipo == 'inspeccion' %}#6c757d{% else %}#d4a853{% endif %};">{{ r.get_tipo_display }}</span> {{ r.titulo }}</h6>
+                    <small style="color:var(--text-muted);">{{ r.fecha|date:"d/m/Y H:i" }}</small>
+                </div>
+                <p style="font-size:0.9rem;">{{ r.descripcion }}</p>
+                <div class="d-flex justify-content-between">
+                    <small style="color:var(--text-muted);"><i class="bi bi-person"></i> {{ r.autor.username }} | <i class="bi bi-building"></i> {{ r.edificio.nombre }}</small>
+                    {% if r.coste > 0 %}<strong style="color:var(--gold);">${{ r.coste }}</strong>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-5"><i class="bi bi-journal-text" style="font-size:3rem;color:var(--text-muted);"></i><p class="mt-2" style="color:var(--text-muted);">No hay registros en la bitacora</p></div>
+    {% endfor %}
+</div>
+<a href="{% url 'monitor:edificio_list' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver</a>
+{% endblock %}

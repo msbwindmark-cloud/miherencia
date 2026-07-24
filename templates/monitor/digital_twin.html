@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Digital Twin - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<h2 style="color:var(--gold);"><i class="bi bi-box"></i> Digital Twin - {{ edificio.nombre }}</h2>
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <canvas id="twinCanvas" width="800" height="500" style="width:100%;border-radius:12px;background:#0a0a0a;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card glass-card border-0 mb-3">
+            <div class="card-body text-center">
+                <div style="width:80px;height:80px;border-radius:50%;background:{{ twin.estado_color }};margin:0 auto;display:flex;align-items:center;justify-content:center;">
+                    <span style="font-size:2rem;color:white;font-weight:700;">{{ edificio.salud_score }}</span>
+                </div>
+                <p class="mt-2" style="color:var(--text-muted);">Salud del Edificio</p>
+            </div>
+        </div>
+        <div class="card glass-card border-0 mb-3">
+            <div class="card-header" style="background:rgba(212,168,83,0.1);border:none;"><h6 style="color:var(--gold);" class="mb-0">Sensores en Tiempo Real</h6></div>
+            <div class="card-body">
+                {% for l in lecturas %}
+                <div class="d-flex justify-content-between mb-2 p-2" style="background:rgba(255,255,255,0.03);border-radius:8px;">
+                    <span>{{ l.tipo|title }}</span>
+                    <strong style="color:var(--gold);">{{ l.valor }} {{ l.unidad }}</strong>
+                </div>
+                {% empty %}<p style="color:var(--text-muted);">Sin datos de sensores</p>{% endfor %}
+            </div>
+        </div>
+        <div class="card glass-card border-0">
+            <div class="card-body text-center">
+                <small style="color:var(--text-muted);">Ultima actualizacion: {{ twin.ultima_actualizacion|date:"d/m/Y H:i" }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+const canvas = document.getElementById('twinCanvas');
+const ctx = canvas.getContext('2d');
+let angle = 0;
+const color = '{{ twin.estado_color }}';
+function drawBuilding() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    const w = 200, h = 280;
+    const offsetX = Math.sin(angle) * 30;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx.fillRect(-400, -250, 800, 500);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(-w/2 + offsetX, -h/2, w, h);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-w/2 + offsetX, -h/2, w, h);
+    ctx.fillStyle = 'rgba(212,168,83,0.8)';
+    for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 3; col++) {
+            ctx.fillRect(-w/2 + 20 + col * 60 + offsetX, -h/2 + 20 + row * 50, 40, 30);
+        }
+    }
+    ctx.fillStyle = '#d4a853';
+    ctx.fillRect(-20 + offsetX, h/2 - 60, 40, 60);
+    ctx.strokeStyle = '#d4a853';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-w/2 + offsetX, -h/2);
+    ctx.lineTo(0 + offsetX, -h/2 - 60);
+    ctx.lineTo(w/2 + offsetX, -h/2);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(212,168,83,0.4)';
+    ctx.fill();
+    ctx.restore();
+    angle += 0.005;
+    requestAnimationFrame(drawBuilding);
+}
+drawBuilding();
+</script>
+<a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Edificio</a>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Reportes Automaticos{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-file-earmark-bar-graph"></i> Reportes Automaticos</h2>
+    <a href="{% url 'monitor:generar_reporte_semanal' %}" class="btn btn-accent" onclick="return confirm('Generar y enviar reporte semanal?')"><i class="bi bi-send"></i> Generar y Enviar Reporte Semanal</a>
+</div>
+<div class="card glass-card border-0 mb-4">
+    <div class="card-body">
+        <p style="color:var(--text-muted);">Los reportes se generan automaticamente con el resumen de actividad de tus edificios. Puedes generar uno manualmente o programar envios.</p>
+    </div>
+</div>
+<div class="row">
+    {% for r in reportes %}
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card glass-card border-0 h-100">
+            <div class="card-body">
+                <h6 style="color:var(--gold);">{{ r.titulo }}</h6>
+                <p class="mb-1"><span class="badge" style="background:var(--accent);">{{ r.get_tipo_display }}</span>
+                {% if r.enviado %}<span class="badge bg-success">Enviado</span>{% else %}<span class="badge bg-secondary">Pendiente</span>{% endif %}</p>
+                <small style="color:var(--text-muted);">{{ r.fecha_generacion|date:"d/m/Y H:i" }}</small>
+                {% if r.archivo_pdf %}<br><a href="{{ r.archivo_pdf.url }}" class="btn btn-sm btn-outline-accent mt-2"><i class="bi bi-download"></i> Descargar PDF</a>{% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <i class="bi bi-file-earmark-x" style="font-size:3rem;color:var(--text-muted);"></i>
+        <p class="mt-2" style="color:var(--text-muted);">No hay reportes aun. Genera el primero!</p>
+    </div>
+    {% endfor %}
+</div>
+<a href="{% url 'monitor:dashboard' %}" class="btn btn-sm btn-outline-secondary mt-4"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Audit Log - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1><i class="bi bi-journal-text"></i> Registro de Auditoria</h1>
+        <p>Historial completo de actividad del sistema</p>
+        <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary mt-2"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+
+<div class="container fade-in">
+    <form method="get" class="card-custom p-3 mb-4">
+        <div class="row align-items-end">
+            <div class="col-md-4 mb-2">
+                <label class="form-label fw-semibold">Modelo</label>
+                <select name="modelo" class="form-select">
+                    <option value="">Todos</option>
+                    {% for m in modelos %}<option value="{{ m }}" {% if filtro_modelo == m %}selected{% endif %}>{{ m }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 mb-2">
+                <label class="form-label fw-semibold">Acción</label>
+                <select name="accion" class="form-select">
+                    <option value="">Todas</option>
+                    <option value="crear" {% if filtro_accion == 'crear' %}selected{% endif %}>Crear</option>
+                    <option value="editar" {% if filtro_accion == 'editar' %}selected{% endif %}>Editar</option>
+                    <option value="eliminar" {% if filtro_accion == 'eliminar' %}selected{% endif %}>Eliminar</option>
+                    <option value="login" {% if filtro_accion == 'login' %}selected{% endif %}>Login</option>
+                    <option value="exportar" {% if filtro_accion == 'exportar' %}selected{% endif %}>Exportar</option>
+                    <option value="importar" {% if filtro_accion == 'importar' %}selected{% endif %}>Importar</option>
+                </select>
+            </div>
+            <div class="col-md-4 mb-2">
+                <button type="submit" class="btn btn-accent"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+                <a href="{% url 'monitor:audit_log' %}" class="btn btn-outline-accent ms-2">Limpiar</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="card-custom">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Usuario</th>
+                            <th>Acción</th>
+                            <th>Modelo</th>
+                            <th>Descripción</th>
+                            <th>IP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td><small>{{ log.fecha|date:"d/m/Y H:i:s" }}</small></td>
+                            <td class="fw-semibold">{{ log.usuario.username|default:"Sistema" }}</td>
+                            <td>
+                                {% if log.accion == 'crear' %}<span class="badge bg-success rounded-pill">Crear</span>
+                                {% elif log.accion == 'editar' %}<span class="badge bg-warning text-dark rounded-pill">Editar</span>
+                                {% elif log.accion == 'eliminar' %}<span class="badge bg-danger rounded-pill">Eliminar</span>
+                                {% elif log.accion == 'login' %}<span class="badge bg-info rounded-pill">Login</span>
+                                {% elif log.accion == 'logout' %}<span class="badge bg-secondary rounded-pill">Logout</span>
+                                {% elif log.accion == 'resolver_alerta' %}<span class="badge bg-success rounded-pill">Resolver</span>
+                                {% elif log.accion == 'exportar' %}<span class="badge bg-primary rounded-pill">Exportar</span>
+                                {% elif log.accion == 'importar' %}<span class="badge bg-danger rounded-pill">Importar</span>
+                                {% elif log.accion == 'generar_informe' %}<span class="badge bg-warning text-dark rounded-pill">Informe</span>
+                                {% else %}<span class="badge bg-secondary rounded-pill">{{ log.get_accion_display }}</span>{% endif %}
+                            </td>
+                            <td><span class="text-muted">{{ log.modelo }}</span></td>
+                            <td>{{ log.descripcion|truncatewords:12 }}</td>
+                            <td><small class="text-muted">{{ log.ip_address|default:"-" }}</small></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted py-4">No hay registros de auditoría</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.venv/
+venv/
+
+# Database
+db.sqlite3
+
+# Media (user uploads)
+media/
+
+# Static files (collected)
+staticfiles/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker overrides
+docker-compose.override.yml
+
+# Node
+node_modules/

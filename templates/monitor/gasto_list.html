@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Gastos{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--accent);"><i class="bi bi-dash-circle"></i> Gastos <span style="font-size:1rem;color:var(--text-muted);">| Total pagado: <strong style="color:var(--accent);">${{ total_pagado|floatformat:0 }}</strong></span></h2>
+    <select onchange="if(this.value)window.location.href='?edificio='+this.value" class="form-select form-select-dark" style="width:auto;">
+        <option value="">Todos los edificios</option>
+        {% for e in edificios %}<option value="{{ e.pk }}">{{ e.nombre }}</option>{% endfor %}
+    </select>
+</div>
+<div class="card glass-card border-0">
+    <div class="card-body">
+        <table class="table table-dark table-hover mb-0">
+            <thead><tr><th>Concepto</th><th>Edificio</th><th>Monto</th><th>Pagado</th><th>Fecha</th><th>Proveedor</th><th>Forma</th><th>Deducible</th></tr></thead>
+            <tbody>
+            {% for g in gastos %}
+            <tr>
+                <td><strong>{{ g.concepto }}</strong></td>
+                <td>{{ g.edificio.nombre }}</td>
+                <td style="color:var(--accent);font-weight:700;">${{ g.monto }}</td>
+                <td>{% if g.pagado %}<span class="badge bg-success">Pagado</span>{% else %}<span class="badge bg-warning">Pendiente</span>{% endif %}</td>
+                <td>{{ g.fecha|date:"d/m/Y" }}</td>
+                <td>{{ g.proveedor|default:"-" }}</td>
+                <td>{{ g.get_forma_pago_display }}</td>
+                <td>{% if g.deducible %}<i class="bi bi-check-circle text-success"></i>{% endif %}</td>
+            </tr>
+            {% empty %}<tr><td colspan="8" class="text-center" style="color:var(--text-muted);">No hay gastos registrados</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<a href="{% url 'monitor:panel_financiero' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Panel Financiero</a>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Backup{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-download"></i> Sistema de Backup</h2>
+    <form method="post" class="d-inline">{% csrf_token %}<button type="submit" class="btn btn-accent" onclick="return confirm('Crear backup completo?')"><i class="bi bi-hdd"></i> Crear Backup Ahora</button></form>
+</div>
+<div class="card glass-card border-0 mb-4">
+    <div class="card-body">
+        <p style="color:var(--text-muted);">El backup exporta todos los datos de la base de datos a un archivo JSON. Puedes configurar backups automaticos a Google Drive.</p>
+    </div>
+</div>
+<div class="card glass-card border-0">
+    <div class="card-body">
+        <table class="table table-dark table-hover mb-0">
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Tamano</th><th>Estado</th></tr></thead>
+            <tbody>
+            {% for b in backups %}
+            <tr>
+                <td>{{ b.fecha|date:"d/m/Y H:i" }}</td>
+                <td><span class="badge bg-accent">{{ b.tipo }}</span></td>
+                <td>{{ b.tamano_kb|floatformat:2 }} MB</td>
+                <td><span class="badge bg-success">{{ b.estado }}</span></td>
+            </tr>
+            {% empty %}<tr><td colspan="4" class="text-center" style="color:var(--text-muted);">No hay backups</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<a href="{% url 'monitor:dashboard' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+{% endblock %}

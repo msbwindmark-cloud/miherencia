@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Mantenimientos - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-tools"></i> Mantenimientos</h1>
+                <p>Gestiona las tareas de mantenimiento de tus edificios</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container fade-in">
+    <div class="d-flex mb-4">
+        <a href="?filtro=activos" class="btn {% if filtro_actual == 'activos' %}btn-accent{% else %}btn-outline-accent{% endif %} me-2">Activos</a>
+        <a href="?filtro=pendientes" class="btn {% if filtro_actual == 'pendientes' %}btn-accent{% else %}btn-outline-accent{% endif %} me-2">Pendientes</a>
+        <a href="?filtro=completados" class="btn {% if filtro_actual == 'completados' %}btn-accent{% else %}btn-outline-accent{% endif %}">Completados</a>
+    </div>
+
+    {% if mantenimientos %}
+    <div class="card-custom">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-custom mb-0">
+                    <thead><tr><th>Título</th><th>Edificio</th><th>Estado</th><th>Prioridad</th><th>Asignado</th><th>Fecha Límite</th><th>Días</th></tr></thead>
+                    <tbody>
+                        {% for m in mantenimientos %}
+                        <tr>
+                            <td class="fw-semibold">{{ m.titulo }}</td>
+                            <td>{{ m.edificio.nombre }}</td>
+                            <td><span class="badge rounded-pill {% if m.estado == 'completado' %}bg-success{% elif m.estado == 'en_progreso' %}bg-info{% elif m.estado == 'pendiente' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ m.get_estado_display }}</span></td>
+                            <td><span class="badge rounded-pill {% if m.prioridad == 'urgente' %}bg-danger{% elif m.prioridad == 'alta' %}bg-warning text-dark{% elif m.prioridad == 'media' %}bg-info{% else %}bg-success{% endif %}">{{ m.get_prioridad_display }}</span></td>
+                            <td>{{ m.asignado_a.username|default:"-" }}</td>
+                            <td>{{ m.fecha_limite|date:"d/m/Y"|default:"-" }}</td>
+                            <td>
+                                {% if m.dias_restantes is not None %}
+                                    {% if m.dias_restantes < 0 %}<span class="text-danger fw-bold">Vencido</span>
+                                    {% elif m.dias_restantes <= 3 %}<span class="text-warning fw-bold">{{ m.dias_restantes }}d</span>
+                                    {% else %}{{ m.dias_restantes }}d{% endif %}
+                                {% else %}-{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state"><i class="bi bi-tools"></i><h4>Sin mantenimientos</h4></div>
+    {% endif %}
+</div>
+{% endblock %}

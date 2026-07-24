@@ -1,0 +1,275 @@
+# SmartHeritage - English translations
+msgid ""
+msgstr ""
+"Project-Id-Version: SmartHeritage 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-24 10:00+0000\n"
+"PO-Revision-Date: 2026-07-24 10:00+0000\n"
+"Last-Translator: SmartHeritage Team\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Edificios"
+msgstr "Buildings"
+
+msgid "Sensores"
+msgstr "Sensors"
+
+msgid "Lecturas"
+msgstr "Readings"
+
+msgid "Alertas"
+msgstr "Alerts"
+
+msgid "Mantenimiento"
+msgstr "Maintenance"
+
+msgid "Informes"
+msgstr "Reports"
+
+msgid "Configuracion"
+msgstr "Settings"
+
+msgid "Cerrar sesion"
+msgstr "Logout"
+
+msgid "Iniciar sesion"
+msgstr "Login"
+
+msgid "Buscar"
+msgstr "Search"
+
+msgid "Guardar"
+msgstr "Save"
+
+msgid "Cancelar"
+msgstr "Cancel"
+
+msgid "Eliminar"
+msgstr "Delete"
+
+msgid "Editar"
+msgstr "Edit"
+
+msgid "Crear"
+msgstr "Create"
+
+msgid "Volver"
+msgstr "Back"
+
+msgid "Nombre"
+msgstr "Name"
+
+msgid "Direccion"
+msgstr "Address"
+
+msgid "Ciudad"
+msgstr "City"
+
+msgid "Estado"
+msgstr "Status"
+
+msgid "Fecha"
+msgstr "Date"
+
+msgid "Descripcion"
+msgstr "Description"
+
+msgid "Tiempo real"
+msgstr "Real time"
+
+msgid "Mapa global"
+msgstr "Global map"
+
+msgid "Comparativa"
+msgstr "Comparison"
+
+msgid "Calendario"
+msgstr "Calendar"
+
+msgid "Notificaciones"
+msgstr "Notifications"
+
+msgid "Reportes automaticos"
+msgstr "Automatic reports"
+
+msgid "Gestion de usuarios"
+msgstr "User management"
+
+msgid "Auditoria"
+msgstr "Audit"
+
+msgid "Exportar"
+msgstr "Export"
+
+msgid "Importar"
+msgstr "Import"
+
+msgid "Backup"
+msgstr "Backup"
+
+msgid "Ranking global"
+msgstr "Global ranking"
+
+msgid "Energia"
+msgstr "Energy"
+
+msgid "Seguros"
+msgstr "Insurance"
+
+msgid "Legal"
+msgstr "Legal"
+
+msgid "Blockchain"
+msgstr "Blockchain"
+
+msgid "Tours virtuales"
+msgstr "Virtual tours"
+
+msgid "Eventos"
+msgstr "Events"
+
+msgid "Tienda"
+msgstr "Store"
+
+msgid "Chat IA"
+msgstr "AI Chat"
+
+msgid "Galeria"
+msgstr "Gallery"
+
+msgid "Comentarios"
+msgstr "Comments"
+
+msgid "Gestion de tareas"
+msgstr "Task management"
+
+msgid "Panel financiero"
+msgstr "Financial panel"
+
+msgid "Inventario"
+msgstr "Inventory"
+
+msgid "Contratos"
+msgstr "Contracts"
+
+msgid "Bitacora"
+msgstr "Logbook"
+
+msgid "Herramientas"
+msgstr "Tools"
+
+msgid "Inspecciones"
+msgstr "Inspections"
+
+msgid "Documentos"
+msgstr "Documents"
+
+msgid "Voluntarios"
+msgstr "Volunteers"
+
+msgid "Donaciones"
+msgstr "Donations"
+
+msgid "Portal educativo"
+msgstr "Educational portal"
+
+msgid "Reportes ciudadanos"
+msgstr "Citizen reports"
+
+msgid "Simulador climatico"
+msgstr "Climate simulator"
+
+msgid "Widget islamico"
+msgstr "Islamic widget"
+
+msgid "Visor 3D"
+msgstr "3D Viewer"
+
+msgid "Mapa de calor"
+msgstr "Heat map"
+
+msgid "Huella CO2"
+msgstr "CO2 footprint"
+
+msgid "Recomendaciones IA"
+msgstr "AI Recommendations"
+
+msgid "Analisis predictivo"
+msgstr "Predictive analysis"
+
+msgid "Anomalias"
+msgstr "Anomalies"
+
+msgid "Dashboard de inversores"
+msgstr "Investor dashboard"
+
+msgid "Comparativa de periodos"
+msgstr "Period comparison"
+
+msgid "Comparativa de ciudades"
+msgstr "City comparison"
+
+msgid "Modo emergencia"
+msgstr "Emergency mode"
+
+msgid "Resumen diario"
+msgstr "Daily summary"
+
+msgid "Calculadora ROI"
+msgstr "ROI calculator"
+
+msgid "Calculadora de restauracion"
+msgstr "Restoration calculator"
+
+msgid "RBAC"
+msgstr "Access Control"
+
+msgid "Webhooks"
+msgstr "Webhooks"
+
+msgid "Idiomas"
+msgstr "Languages"
+
+msgid "Citas"
+msgstr "Appointments"
+
+msgid "Facturas"
+msgstr "Invoices"
+
+msgid "Nominas"
+msgstr "Payrolls"
+
+msgid "Presupuestos"
+msgstr "Budgets"
+
+msgid "Cuentas contables"
+msgstr "Accounting"
+
+msgid "Digital Twin"
+msgstr "Digital Twin"
+
+msgid "Catastro financiero"
+msgstr "Financial registry"
+
+msgid "Almacenes"
+msgstr "Warehouses"
+
+msgid "Produccion"
+msgstr "Production"
+
+msgid "Licitaciones"
+msgstr "Public tenders"
+
+msgid "Certificados"
+msgstr "Certificates"
+
+msgid "Normativas"
+msgstr "Regulations"

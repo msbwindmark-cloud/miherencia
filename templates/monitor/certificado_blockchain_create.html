@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Nuevo Certificado Blockchain - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-key"></i> Nuevo Certificado Blockchain</h1>
+                <p>Emitir certificado blockchain para {{ edificio.nombre }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if edificio %}
+                <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-accent me-2">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-custom alert-dismissible fade show">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-custom">
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Tipo de Certificado</label>
+                                <select name="tipo" class="form-control" required>
+                                    <option value="propiedad">Certificado de Propiedad</option>
+                                    <option value="restauracion">Certificado de Restauración</option>
+                                    <option value="inspeccion">Certificado de Inspección</option>
+                                    <option value="historico">Registro Histórico</option>
+                                    <option value="nft">NFT Heritage</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-semibold">Título</label>
+                                <input type="text" name="titulo" class="form-control" required placeholder="Ej: Certificado de restauración fachada principal">
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-semibold">Descripción</label>
+                                <textarea name="descripcion" class="form-control" rows="4" required placeholder="Describe el contenido del certificado..."></textarea>
+                            </div>
+                        </div>
+                        <div class="alert alert-info alert-custom mb-4">
+                            <i class="bi bi-info-circle me-2"></i>
+                            El sistema generará automáticamente el hash de transacción y dirección wallet. El certificado se emitirá con estado validado.
+                        </div>
+                        <div class="d-flex justify-content-between mt-3">
+                            <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-accent btn-lg">
+                                <i class="bi bi-key me-2"></i>Emitir Certificado
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

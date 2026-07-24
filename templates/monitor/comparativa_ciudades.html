@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Comparativa con Ciudades{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-geo-alt"></i> Comparativa con Ciudades</h2>
+</div>
+
+{% if stats_propias %}
+<div class="card glass-card border-0 mb-4">
+    <div class="card-header" style="background:rgba(212,168,83,0.1);border:none;"><h6 style="color:var(--gold);" class="mb-0"><i class="bi bi-building"></i> Tus Edificios vs Media Nacional</h6></div>
+    <div class="card-body">
+        <table class="table table-dark table-hover mb-0">
+            <thead><tr><th>Tu Edificio</th><th>Salud</th><th>Sensores</th><th>Alertas</th><th>vs Media</th></tr></thead>
+            <tbody>
+            {% for s in stats_propias %}
+            <tr>
+                <td><strong>{{ s.edificio.nombre }}</strong></td>
+                <td>{{ s.salud }}%</td>
+                <td>{{ s.sensores }}</td>
+                <td>{{ s.alertas }}</td>
+                <td>
+                    {% if s.salud > 72 %}<span style="color:#28a745;">+{{ s.salud|floatformat:0 }}% mejor</span>
+                    {% elif s.salud < 65 %}<span style="color:var(--accent);">{{ s.salud|floatformat:0 }}% por debajo</span>
+                    {% else %}<span style="color:#ffc107;">En promedio</span>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    {% for c in ciudades %}
+    <div class="col-md-4 col-lg-3 mb-3">
+        <div class="card glass-card border-0 h-100">
+            <div class="card-body text-center">
+                <h5 style="color:var(--gold);"><i class="bi bi-geo-alt-fill"></i> {{ c.ciudad }}</h5>
+                <small style="color:var(--text-muted);">{{ c.edificio_tipo }} | {{ c.total_edificios }} edificios</small>
+                <hr style="border-color:rgba(255,255,255,0.1);">
+                <div class="row text-center">
+                    <div class="col-4"><div style="font-size:1.1rem;color:var(--accent);font-weight:700;">{{ c.media_salud }}%</div><small style="color:var(--text-muted);">Salud</small></div>
+                    <div class="col-4"><div style="font-size:1.1rem;color:#28a745;font-weight:700;">{{ c.media_sensores }}</div><small style="color:var(--text-muted);">Sensores</small></div>
+                    <div class="col-4"><div style="font-size:1.1rem;color:#fd7e14;font-weight:700;">{{ c.media_alertas }}</div><small style="color:var(--text-muted);">Alertas</small></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<a href="{% url 'monitor:dashboard' %}" class="btn btn-sm btn-outline-secondary mt-4"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+{% endblock %}

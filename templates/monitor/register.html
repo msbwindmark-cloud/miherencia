@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Registro - SmartHeritage{% endblock %}
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center" style="background:var(--gradient-hero);">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="text-center mb-4">
+                    <i class="bi bi-building-columns" style="font-size:3rem;color:var(--gold)"></i>
+                    <h1 class="text-white fw-bold mt-2">SmartHeritage</h1>
+                    <p class="text-white-50">Crea tu cuenta y empieza a proteger el patrimonio</p>
+                </div>
+                <div class="card-custom p-4">
+                    <h4 class="fw-bold mb-4 text-center">Crear Cuenta</h4>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Nombre</label>
+                                {{ form.first_name }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Apellidos</label>
+                                {{ form.last_name }}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email</label>
+                            {{ form.email }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Usuario</label>
+                            {{ form.username }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Contraseña</label>
+                            {{ form.password1 }}
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Confirmar Contraseña</label>
+                            {{ form.password2 }}
+                        </div>
+                        {% if form.errors %}
+                        <div class="alert alert-danger alert-custom mb-3">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            {% for field, errors in form.errors.items %}
+                            {% for error in errors %}<div>{{ error }}</div>{% endfor %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <button type="submit" class="btn btn-accent w-100 py-2">
+                            <i class="bi bi-person-plus me-2"></i>Crear Cuenta
+                        </button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'monitor:login' %}" class="text-decoration-none" style="color:var(--accent)">
+                            ¿Ya tienes cuenta? Inicia sesión
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Nueva Tarea{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2 style="color:var(--gold);"><i class="bi bi-plus-circle"></i> Nueva Tarea</h2>
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3"><label class="form-label">Titulo</label><input name="titulo" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><textarea name="descripcion" class="form-control" rows="2"></textarea></div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Estado</label>
+                            <select name="estado" class="form-select"><option value="pendiente">Pendiente</option><option value="en_progreso">En Progreso</option><option value="revision">En Revision</option><option value="completada">Completada</option></select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Prioridad</label>
+                            <select name="prioridad" class="form-select"><option value="baja">Baja</option><option value="media" selected>Media</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Asignado a</label>
+                            <select name="asignado_a" class="form-select"><option value="">Sin asignar</option>{% for u in usuarios %}<option value="{{ u.pk }}">{{ u.username }}</option>{% endfor %}</select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Edificio</label>
+                            <select name="edificio" class="form-select"><option value="">General</option>{% for e in edificios %}<option value="{{ e.pk }}">{{ e.nombre }}</option>{% endfor %}</select>
+                        </div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Fecha Limite</label><input name="fecha_limite" type="date" class="form-control"></div>
+                    </div>
+                    <button type="submit" class="btn btn-accent w-100"><i class="bi bi-check-circle"></i> Crear Tarea</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% block title %}{{ edificio.nombre }} - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-2">
+                        <li class="breadcrumb-item"><a href="{% url 'monitor:edificio_list' %}" class="text-white-50">Edificios</a></li>
+                        <li class="breadcrumb-item text-white active">{{ edificio.nombre }}</li>
+                    </ol>
+                </nav>
+                <h1><i class="bi bi-building"></i> {{ edificio.nombre }}</h1>
+                <p class="mb-0"><i class="bi bi-geo-alt me-1"></i>{{ edificio.direccion }}, {{ edificio.ciudad }} ({{ edificio.provincia }})</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'monitor:edificio_update' pk=edificio.pk %}" class="btn btn-outline-accent me-2"><i class="bi bi-pencil"></i></a>
+                <button type="button" class="btn btn-delete" style="background:#dc3545;color:white;border:none;" onclick="confirmarEliminar('{% url 'monitor:edificio_delete' pk=edificio.pk %}')"><i class="bi bi-trash"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container fade-in">
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="stat-card" style="border-color:var(--accent2)">
+                <div class="stat-icon" style="background:rgba(15,52,96,0.1);color:var(--accent2)"><i class="bi bi-hdd-network"></i></div>
+                <div class="stat-number" style="color:var(--accent2)">{{ edificio.num_sensores }}</div>
+                <div class="stat-label">Sensores</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card" style="border-color:{% if edificio.alertas_activas > 0 %}var(--danger){% else %}var(--success){% endif %}">
+                <div class="stat-icon" style="background:rgba({% if edificio.alertas_activas > 0 %}231,76,60{% else %}46,204,113{% endif %},0.1);color:{% if edificio.alertas_activas > 0 %}var(--danger){% else %}var(--success){% endif %}"><i class="bi bi-bell"></i></div>
+                <div class="stat-number" style="color:{% if edificio.alertas_activas > 0 %}var(--danger){% else %}var(--success){% endif %}">{{ edificio.alertas_activas }}</div>
+                <div class="stat-label">Alertas Activas</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card" style="border-color:var(--gold)">
+                <div class="stat-icon" style="background:rgba(212,168,83,0.1);color:var(--gold)"><i class="bi bi-heart-pulse"></i></div>
+                <div class="stat-number" style="color:var(--gold)">{{ edificio.salud_score }}</div>
+                <div class="stat-label">Salud / 100</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card" style="border-color:var(--accent)">
+                <div class="stat-icon" style="background:rgba(233,69,96,0.1);color:var(--accent)"><i class="bi bi-{{ edificio.get_categoria_display|lower }}"></i></div>
+                <div class="stat-number" style="color:var(--accent);font-size:1.2rem;">{{ edificio.get_categoria_display }}</div>
+                <div class="stat-label">Categoría</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card-custom mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2" style="color:var(--accent)"></i>Gráficas - Últimos 7 días</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-accent" onclick="mostrarGrafica('temperatura')"><i class="bi bi-thermometer-half"></i> Temp</button>
+                        <button class="btn btn-sm btn-outline-accent" onclick="mostrarGrafica('humedad')"><i class="bi bi-droplet"></i> Hum</button>
+                        <button class="btn btn-sm btn-outline-accent" onclick="mostrarGrafica('vibracion')"><i class="bi bi-activity"></i> Vib</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="mainChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <div class="card-custom">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-hdd-network me-2" style="color:var(--accent2)"></i>Sensores ({{ sensores|length }})</h5>
+                    <a href="{% url 'monitor:sensor_create' edificio_pk=edificio.pk %}" class="btn btn-accent btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i>Añadir Sensor
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if sensores %}
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr><th>Sensor</th><th>Tipo</th><th>Última Lectura</th><th>Estado</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                {% for sensor in sensores %}
+                                <tr>
+                                    <td class="fw-semibold">{{ sensor.nombre }}</td>
+                                    <td>
+                                        <span class="badge rounded-pill" style="background:{% if sensor.tipo == 'temperatura' %}#e74c3c{% elif sensor.tipo == 'humedad' %}#3498db{% elif sensor.tipo == 'vibracion' %}#f39c12{% elif sensor.tipo == 'luz' %}#f1c40f{% elif sensor.tipo == 'co2' %}#27ae60{% elif sensor.tipo == 'ruido' %}#9b59b6{% elif sensor.tipo == 'grieta' %}#e67e22{% else %}#1abc9c{% endif %};color:white;font-size:0.8rem;">
+                                            {{ sensor.get_tipo_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if sensor.ultima_lectura %}
+                                        <span class="{% if sensor.ultima_lectura.es_alerta %}text-danger fw-bold{% endif %}">
+                                            {{ sensor.ultima_lectura.valor }} {{ sensor.unidad_medida }}
+                                        </span>
+                                        {% else %}<span class="text-muted">Sin datos</span>{% endif %}
+                                    </td>
+                                    <td><span class="pulse-dot"></span></td>
+                                    <td><a href="{% url 'monitor:sensor_detail' pk=sensor.pk %}" class="btn btn-sm btn-outline-accent"><i class="bi bi-eye"></i></a></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-hdd-network"></i>
+                        <h6>Sin sensores instalados</h6>
+                        <a href="{% url 'monitor:sensor_create' edificio_pk=edificio.pk %}" class="btn btn-accent btn-sm mt-2">Añadir Primer Sensor</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card-custom mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2" style="color:var(--accent2)"></i>Información</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">Categoría:</span><strong>{{ edificio.get_categoria_display }}</strong></li>
+                        <li class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">Estado:</span><span class="badge-heritage badge-{{ edificio.estado_general }}">{{ edificio.get_estado_general_display }}</span></li>
+                        <li class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">Año construcción:</span><strong>{{ edificio.anno_construccion|default:"-" }}</strong></li>
+                        <li class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">Protección oficial:</span><strong>{% if edificio.proteccion_oficial %}<i class="bi bi-check-circle text-success"></i> Sí{% else %}No{% endif %}</strong></li>
+                        <li class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">Creado:</span><strong>{{ edificio.fecha_creacion|date:"d/m/Y" }}</strong></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card-custom mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark me-2" style="color:var(--accent)"></i>Informes y Exportar</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'monitor:informe_create' edificio_pk=edificio.pk %}" class="btn btn-accent w-100 mb-2"><i class="bi bi-file-earmark-text me-2"></i>Generar Informe</a>
+                    <a href="{% url 'monitor:generar_pdf' pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-file-earmark-pdf me-2"></i>Descargar PDF</a>
+                    <a href="{% url 'monitor:generar_qr' pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-qr-code me-2"></i>Generar QR</a>
+                    <a href="{% url 'monitor:exportar_excel' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-filetype-xlsx me-2"></i>Exportar Excel</a>
+                    <a href="{% url 'monitor:exportar_csv' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-filetype-csv me-2"></i>Exportar CSV</a>
+                    <a href="{% url 'monitor:importar_csv' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100"><i class="bi bi-upload me-2"></i>Importar CSV</a>
+                </div>
+            </div>
+
+            <div class="card-custom mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-lightning me-2" style="color:var(--warning)"></i>Acciones Rápidas</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'monitor:chat_view' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-chat-dots me-2"></i>Chat del Equipo</a>
+                    <a href="{% url 'monitor:timeline_view' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-camera-reels me-2"></i>Timeline Fotográfico</a>
+                    <a href="{% url 'monitor:mantenimiento_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-tools me-2"></i>Nuevo Mantenimiento</a>
+                    <a href="{% url 'monitor:analisis_ia_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-robot me-2"></i>Analisis IA</a>
+                    <a href="{% url 'monitor:predicciones_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-cpu me-2"></i>Prediccion ML</a>
+                    <a href="{% url 'monitor:donacion_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-heart me-2"></i>Donaciones</a>
+                    <a href="{% url 'monitor:reporte_ciudadano_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-flag me-2"></i>Reporte Ciudadano</a>
+                    <a href="{% url 'monitor:seguro_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-shield-check me-2"></i>Seguro</a>
+                    <a href="{% url 'monitor:eficiencia_energetica_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-lightning-charge me-2"></i>Energia</a>
+                    <a href="{% url 'monitor:cumplimiento_legal_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-bank me-2"></i>Cumplimiento Legal</a>
+                    <a href="{% url 'monitor:certificado_blockchain_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-link-45deg me-2"></i>Certificado Blockchain</a>
+                    <a href="{% url 'monitor:evento_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-calendar-event me-2"></i>Crear Evento</a>
+                    <a href="{% url 'monitor:tienda_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-shop me-2"></i>Tienda</a>
+                    <a href="{% url 'monitor:galeria_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-images me-2"></i>Galeria Antes/Despues</a>
+                    <a href="{% url 'monitor:chatbot_ia' %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-robot me-2"></i>Chatbot IA</a>
+                    <hr style="border-color:rgba(233,69,96,0.3);">
+                    <a href="{% url 'monitor:visor_3d' pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-box me-2"></i>Visor 3D</a>
+                    <a href="{% url 'monitor:mapa_calor' pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-thermometer-half me-2"></i>Mapa de Calor</a>
+                    <a href="{% url 'monitor:huella_co2' pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-cloud-haze me-2"></i>Huella CO2</a>
+                    <a href="{% url 'monitor:documento_list' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-folder2-open me-2"></i>Documentos</a>
+                    <a href="{% url 'monitor:inspeccion_list' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-clipboard-check me-2"></i>Inspecciones</a>
+                    <a href="{% url 'monitor:timeline_historico_list' pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-clock-history me-2"></i>Timeline Historico</a>
+                    <a href="{% url 'monitor:recomendaciones_ia' pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-lightbulb me-2"></i>Recomendaciones IA</a>
+                    <a href="{% url 'monitor:analisis_predictivo_avanzado' pk=edificio.pk %}" class="btn btn-outline-accent w-100"><i class="bi bi-graph-up-arrow me-2"></i>Analisis Predictivo</a>
+                    <hr style="border-color:rgba(212,168,83,0.3);">
+                    <a href="{% url 'monitor:calculadora_roi' pk=edificio.pk %}" class="btn btn-outline-warning w-100 mb-2" style="color:var(--gold);border-color:var(--gold);"><i class="bi bi-calculator me-2"></i>Calculadora ROI</a>
+                    <hr style="border-color:rgba(40,167,69,0.3);">
+                    <a href="{% url 'monitor:ingreso_create' edificio_pk=edificio.pk %}" class="btn btn-success w-100 mb-2"><i class="bi bi-plus-circle me-2"></i>Nuevo Ingreso</a>
+                    <a href="{% url 'monitor:gasto_create' edificio_pk=edificio.pk %}" class="btn btn-danger w-100 mb-2"><i class="bi bi-dash-circle me-2"></i>Nuevo Gasto</a>
+                    <a href="{% url 'monitor:factura_create' edificio_pk=edificio.pk %}" class="btn btn-accent w-100 mb-2"><i class="bi bi-receipt me-2"></i>Nueva Factura</a>
+                    <a href="{% url 'monitor:presupuesto_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-wallet2 me-2"></i>Nuevo Presupuesto</a>
+                    <hr style="border-color:rgba(0,210,255,0.3);">
+                    <a href="{% url 'monitor:digital_twin' pk=edificio.pk %}" class="btn w-100 mb-2" style="background:rgba(0,210,255,0.2);color:#00d2ff;border:1px solid #00d2ff;"><i class="bi bi-box me-2"></i>Digital Twin 3D</a>
+                    <a href="{% url 'monitor:foto_inspeccion_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-camera me-2"></i>Analisis Foto IA</a>
+                    <a href="{% url 'monitor:cita_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-calendar-plus me-2"></i>Nueva Cita</a>
+                    <a href="{% url 'monitor:contrato_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-file-earmark-text me-2"></i>Nuevo Contrato</a>
+                    <a href="{% url 'monitor:inventario_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-box-seam me-2"></i>Inventario</a>
+                    <a href="{% url 'monitor:bitacora_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-journal-plus me-2"></i>Bitacora Obra</a>
+                    <hr style="border-color:rgba(220,53,69,0.3);">
+                    <a href="{% url 'monitor:modo_emergencia' pk=edificio.pk %}" class="btn btn-danger w-100"><i class="bi bi-exclamation-triangle me-2"></i>MODO EMERGENCIA</a>
+                </div>
+            </div>
+
+            {% if edificio.descripcion %}
+            <div class="card-custom">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-book me-2" style="color:var(--gold)"></i>Historia</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ edificio.descripcion }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const chartData = {{ chart_data|safe }};
+let mainChart;
+
+function crearGrafica(tipo) {
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    if (mainChart) mainChart.destroy();
+    const datos = chartData[tipo] || [];
+    const labels = datos.map(d => d.x);
+    const config = {
+        temperaura: { data: datos.map(d => d.avg), label: 'Temperatura (°C)', borderColor: '#e94560', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+        humedad: { data: datos.map(d => d.avg), label: 'Humedad (%)', borderColor: '#3498db', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+        vibracion: { data: datos.map(d => d.avg), label: 'Vibración', borderColor: '#f39c12', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+    };
+    const c = config[tipo];
+    if (!c) return;
+    mainChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{ ...c, backgroundColor: c.borderColor + '20' }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', labels: { usePointStyle: true } } },
+            scales: { x: { grid: { display: false } }, y: { grid: { color: '#f0f0f0' } } },
+            interaction: { intersect: false, mode: 'index' },
+        }
+    });
+}
+function mostrarGrafica(tipo) { crearGrafica(tipo); }
+crearGrafica('temperaura');
+
+function confirmarEliminar(url) {
+    Swal.fire({
+        title: '¿Eliminar edificio?',
+        text: 'Esta acción eliminará el edificio y todos sus sensores',
+        icon: 'warning', showCancelButton: true,
+        confirmButtonColor: '#e94560', cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar'
+    }).then(r => { if (r.isConfirmed) window.location.href = url; });
+}
+</script>
+{% endblock %}

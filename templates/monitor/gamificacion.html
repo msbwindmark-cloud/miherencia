@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Gamificación - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1><i class="bi bi-trophy"></i> Gamificacion</h1>
+        <p>Gana puntos y desbloquea logros protegiendo el patrimonio</p>
+        <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary mt-2"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card" style="border-color:var(--gold)">
+                <div class="stat-icon" style="background:rgba(212,168,83,0.1);color:var(--gold)"><i class="bi bi-star-fill"></i></div>
+                <div class="stat-number" style="color:var(--gold)">{{ total_puntos }}</div>
+                <div class="stat-label">Puntos Totales</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card" style="border-color:var(--accent)">
+                <div class="stat-icon" style="background:rgba(233,69,96,0.1);color:var(--accent)"><i class="bi bi-award-fill"></i></div>
+                <div class="stat-number" style="color:var(--accent)">{{ logros_obtenidos.count }}</div>
+                <div class="stat-label">Logros Desbloqueados</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card" style="border-color:var(--accent2)">
+                <div class="stat-icon" style="background:rgba(15,52,96,0.1);color:var(--accent2)"><i class="bi bi-list-ol"></i></div>
+                <div class="stat-number" style="color:var(--accent2)">
+                    {% for r in ranking %}
+                        {% if r.usuario__username == request.user.username %}#{{ forloop.counter }}{% endif %}
+                    {% endfor %}
+                </div>
+                <div class="stat-label">Tu Posición</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card-custom mb-4">
+                <div class="card-header"><h5 class="mb-0 fw-bold"><i class="bi bi-award me-2" style="color:var(--gold)"></i>Logros Desbloqueados</h5></div>
+                <div class="card-body">
+                    {% if logros_obtenidos %}
+                    <div class="row">
+                        {% for l in logros_obtenidos %}
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center p-3 rounded-3" style="background:{{ l.color }}15;border:2px solid {{ l.color }}40;">
+                                <div class="rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:{{ l.color }};color:white;font-size:1.3rem;">
+                                    <i class="bi bi-{{ l.icono }}"></i>
+                                </div>
+                                <div><strong>{{ l.nombre }}</strong><br><small class="text-muted">{{ l.descripcion }}</small></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Aún no has desbloqueado logros. ¡Sigue trabajando!</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card-custom">
+                <div class="card-header"><h5 class="mb-0 fw-bold"><i class="bi bi-lock me-2" style="color:var(--text-secondary)"></i>Logros Pendientes</h5></div>
+                <div class="card-body">
+                    {% for l in logros_pendientes %}
+                    <div class="d-flex align-items-center justify-content-between py-3 {% if not forloop.last %}border-bottom{% endif %}">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:45px;height:45px;background:#e9ecef;color:#adb5bd;font-size:1.2rem;">
+                                <i class="bi bi-lock"></i>
+                            </div>
+                            <div><strong>{{ l.nombre }}</strong><br><small class="text-muted">{{ l.descripcion }}</small></div>
+                        </div>
+                        <span class="badge bg-secondary rounded-pill">{{ l.puntos_necesarios }} pts</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card-custom mb-4">
+                <div class="card-header"><h5 class="mb-0 fw-bold"><i class="bi bi-list-ol me-2" style="color:var(--accent2)"></i>Ranking</h5></div>
+                <div class="card-body p-0">
+                    {% for r in ranking %}
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 {% if not forloop.last %}border-bottom{% endif %} {% if r.usuario__username == request.user.username %}bg-light{% endif %}">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold me-2" style="color:{% if forloop.counter == 1 %}var(--gold){% elif forloop.counter == 2 %}#adb5bd{% elif forloop.counter == 3 %}#cd7f32{% else %}var(--text-secondary){% endif %}">#{% if forloop.counter <= 3 %}<i class="bi bi-{% if forloop.counter == 1 %}trophy{% elif forloop.counter == 2 %}trophy{% else %}trophy{% endif %}"></i>{% endif %}{{ forloop.counter }}</span>
+                            <span class="{% if r.usuario__username == request.user.username %}fw-bold{% endif %}">{{ r.usuario__username }}</span>
+                        </div>
+                        <span class="fw-bold" style="color:var(--gold)">{{ r.total }} pts</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card-custom">
+                <div class="card-header"><h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2" style="color:var(--accent)"></i>Actividad Reciente</h5></div>
+                <div class="card-body p-0">
+                    {% for p in puntos %}
+                    <div class="d-flex align-items-center px-3 py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                        <span class="badge bg-success rounded-pill me-2">+{{ p.puntos }}</span>
+                        <div><small class="fw-semibold">{{ p.get_accion_display }}</small><br><small class="text-muted">{{ p.fecha|timesince }} atrás</small></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

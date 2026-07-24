@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Inspecciones - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-clipboard-check"></i> Inspecciones - {{ edificio.nombre }}</h2>
+    <div>
+        <a href="{% url 'monitor:inspeccion_create' edificio_pk=edificio.pk %}" class="btn btn-accent me-2"><i class="bi bi-plus-lg"></i> Nueva Inspeccion</a>
+        <a href="{% url 'monitor:edificio_detail' edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+<div class="row g-3">
+    {% for ins in inspecciones %}
+    <div class="col-md-6">
+        <div class="glass-card p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 class="mb-0">{{ ins.titulo }}</h6>
+                <span class="badge {% if ins.resultado == 'aprobado' %}bg-success{% elif ins.resultado == 'rechazado' %}bg-danger{% elif ins.resultado == 'con_observaciones' %}bg-warning{% else %}bg-secondary{% endif %}">
+                    {{ ins.get_resultado_display }}
+                </span>
+            </div>
+            <small class="text-muted">Inspector: {{ ins.inspector.username }} | {{ ins.fecha_inspeccion|date:"d/m/Y" }}</small>
+            {% if ins.observaciones %}
+            <p class="small mt-2 mb-1">{{ ins.observaciones|truncatewords:30 }}</p>
+            {% endif %}
+            {% if ins.proxima_inspeccion %}
+            <small class="text-warning"><i class="bi bi-calendar"></i> Proxima: {{ ins.proxima_inspeccion|date:"d/m/Y" }}</small>
+            {% endif %}
+            {% if ins.firma_digital %}
+            <div class="mt-2"><small class="text-success"><i class="bi bi-pen"></i> Firmado digitalmente</small></div>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12"><div class="glass-card p-4 text-center"><i class="bi bi-clipboard fs-1 text-muted"></i><p class="text-muted">No hay inspecciones registradas</p></div></div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Buscador Global{% endblock %}
+{% block content %}
+<h2 style="color:var(--gold);"><i class="bi bi-search"></i> Buscador Global</h2>
+<div class="card glass-card border-0 mb-4">
+    <div class="card-body">
+        <form method="get" class="d-flex gap-2">
+            <input name="q" class="form-control" placeholder="Buscar en toda la app..." value="{{ q }}" autofocus>
+            <button type="submit" class="btn btn-accent"><i class="bi bi-search"></i> Buscar</button>
+        </form>
+    </div>
+</div>
+{% if q %}
+<p style="color:var(--text-muted);">{{ total }} resultados para "<strong>{{ q }}</strong>"</p>
+{% for seccion, items in resultados.items %}
+{% if items %}
+<div class="mb-4">
+    <h5 style="color:var(--gold);"><i class="bi bi-folder"></i> {{ seccion|title }}</h5>
+    {% for item in items %}
+    <div class="card glass-card border-0 mb-2">
+        <div class="card-body py-2 px-3">
+            <strong>{{ item }}</strong>
+            <small style="color:var(--text-muted);"> - {{ item|truncatewords:10 }}</small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endfor %}
+{% if total == 0 %}
+<div class="text-center py-5"><i class="bi bi-search" style="font-size:3rem;color:var(--text-muted);"></i><p class="mt-2" style="color:var(--text-muted);">No se encontraron resultados</p></div>
+{% endif %}
+{% endif %}
+<a href="{% url 'monitor:dashboard' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+{% endblock %}

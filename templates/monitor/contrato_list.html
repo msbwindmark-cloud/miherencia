@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Contratos{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-file-earmark-text"></i> Contratos Digitales</h2>
+</div>
+<div class="row">
+    {% for c in contratos %}
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card glass-card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h6 style="color:var(--gold);">{{ c.titulo }}</h6>
+                    <span class="badge" style="background:{% if c.estado == 'firmado' %}#28a745{% elif c.estado == 'enviado' %}#ffc107{% elif c.estado == 'borrador' %}#6c757d{% else %}var(--accent){% endif %};">{{ c.get_estado_display }}</span>
+                </div>
+                <p style="font-size:0.85rem;">{{ c.descripcion|truncatewords:20 }}</p>
+                <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;">
+                    <small><strong>Partes:</strong> {{ c.partes }}</small><br>
+                    <small><strong>Monto:</strong> ${{ c.monto_total }}</small><br>
+                    <small><strong>Periodo:</strong> {{ c.fecha_inicio }} - {{ c.fecha_fin|default:"-" }}</small>
+                </div>
+                {% if c.firma_contratista and c.firma_empresa %}<div class="mt-2"><span class="badge bg-success"><i class="bi bi-pen"></i> Firmado por ambas partes</span></div>{% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5"><i class="bi bi-file-earmark-text" style="font-size:3rem;color:var(--text-muted);"></i><p class="mt-2" style="color:var(--text-muted);">No hay contratos creados</p></div>
+    {% endfor %}
+</div>
+<a href="{% url 'monitor:edificio_list' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver</a>
+{% endblock %}

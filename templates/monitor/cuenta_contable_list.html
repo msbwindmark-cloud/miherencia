@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Cuentas Contables{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-journal-ledger"></i> Cuentas Contables</h2>
+    <a href="{% url 'monitor:cuenta_contable_create' %}" class="btn btn-accent"><i class="bi bi-plus-circle"></i> Nueva Cuenta</a>
+</div>
+<div class="card glass-card border-0">
+    <div class="card-body">
+        <table class="table table-dark table-hover mb-0">
+            <thead><tr><th>Codigo</th><th>Nombre</th><th>Tipo</th><th>Saldo</th><th>Estado</th></tr></thead>
+            <tbody>
+            {% for c in cuentas %}
+            <tr>
+                <td><strong>{{ c.codigo }}</strong></td>
+                <td>{{ c.nombre }}</td>
+                <td><span class="badge" style="background:{% if c.tipo == 'activo' %}#28a745{% elif c.tipo == 'pasivo' %}var(--accent){% elif c.tipo == 'ingreso' %}#17a2b8{% else %}#fd7e14{% endif %};">{{ c.get_tipo_display }}</span></td>
+                <td style="color:{% if c.saldo > 0 %}#28a745{% else %}var(--accent){% endif %};font-weight:700;">${{ c.saldo|floatformat:2 }}</td>
+                <td>{% if c.activa %}<span class="badge bg-success">Activa</span>{% else %}<span class="badge bg-secondary">Inactiva</span>{% endif %}</td>
+            </tr>
+            {% empty %}<tr><td colspan="5" class="text-center" style="color:var(--text-muted);">No hay cuentas contables</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<a href="{% url 'monitor:panel_financiero' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Panel Financiero</a>
+{% endblock %}

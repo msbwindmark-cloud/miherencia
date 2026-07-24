@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Kanban - Tareas{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-kanban"></i> Tablero Kanban</h2>
+    <a href="{% url 'monitor:tarea_create' %}" class="btn btn-accent"><i class="bi bi-plus-circle"></i> Nueva Tarea</a>
+</div>
+<div class="row">
+    <div class="col-lg-3 mb-4">
+        <div class="card glass-card border-0">
+            <div class="card-header text-center" style="background:rgba(212,168,83,0.1);border:none;">
+                <h6 class="mb-0" style="color:var(--gold);">Pendiente</h6>
+            </div>
+            <div class="card-body" style="min-height:400px;">
+                {% for t in tareas %}{% if t.estado == 'pendiente' %}
+                <div class="card mb-2" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;">
+                    <div class="card-body py-2 px-3">
+                        <div class="d-flex justify-content-between">
+                            <strong style="font-size:0.9rem;">{{ t.titulo }}</strong>
+                            <span class="badge" style="background:{% if t.prioridad == 'urgente' %}var(--accent){% elif t.prioridad == 'alta' %}#fd7e14{% elif t.prioridad == 'media' %}#ffc107{% else %}#28a745{% endif %};font-size:0.65rem;">{{ t.get_prioridad_display }}</span>
+                        </div>
+                        {% if t.asignado_a %}<small style="color:var(--text-muted);"><i class="bi bi-person"></i> {{ t.asignado_a.username }}</small>{% endif %}
+                        {% if t.fecha_limite %}<br><small><i class="bi bi-calendar"></i> {{ t.fecha_limite|date:"d/m" }}</small>{% endif %}
+                        <div class="mt-2"><a href="{% url 'monitor:tarea_estado' pk=t.pk %}?estado=en_progreso" class="btn btn-sm" style="padding:2px 6px;font-size:0.65rem;background:rgba(40,167,69,0.3);">&#9654; Iniciar</a></div>
+                    </div>
+                </div>
+                {% endif %}{% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 mb-4">
+        <div class="card glass-card border-0">
+            <div class="card-header text-center" style="background:rgba(13,202,240,0.1);border:none;">
+                <h6 class="mb-0" style="color:#0dcaf0;">En Progreso</h6>
+            </div>
+            <div class="card-body" style="min-height:400px;">
+                {% for t in tareas %}{% if t.estado == 'en_progreso' %}
+                <div class="card mb-2" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;">
+                    <div class="card-body py-2 px-3">
+                        <div class="d-flex justify-content-between">
+                            <strong style="font-size:0.9rem;">{{ t.titulo }}</strong>
+                            <span class="badge" style="background:{% if t.prioridad == 'urgente' %}var(--accent){% elif t.prioridad == 'alta' %}#fd7e14{% elif t.prioridad == 'media' %}#ffc107{% else %}#28a745{% endif %};font-size:0.65rem;">{{ t.get_prioridad_display }}</span>
+                        </div>
+                        {% if t.asignado_a %}<small style="color:var(--text-muted);"><i class="bi bi-person"></i> {{ t.asignado_a.username }}</small>{% endif %}
+                        {% if t.fecha_limite %}<br><small><i class="bi bi-calendar"></i> {{ t.fecha_limite|date:"d/m" }}</small>{% endif %}
+                        <div class="mt-2 d-flex gap-1">
+                            <a href="{% url 'monitor:tarea_estado' pk=t.pk %}?estado=pendiente" class="btn btn-sm" style="padding:2px 6px;font-size:0.65rem;background:rgba(255,255,255,0.1);">&#9664;</a>
+                            <a href="{% url 'monitor:tarea_estado' pk=t.pk %}?estado=revision" class="btn btn-sm" style="padding:2px 6px;font-size:0.65rem;background:rgba(40,167,69,0.3);">&#9654; Revision</a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}{% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 mb-4">
+        <div class="card glass-card border-0">
+            <div class="card-header text-center" style="background:rgba(255,193,7,0.1);border:none;">
+                <h6 class="mb-0" style="color:#ffc107;">Revision</h6>
+            </div>
+            <div class="card-body" style="min-height:400px;">
+                {% for t in tareas %}{% if t.estado == 'revision' %}
+                <div class="card mb-2" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;">
+                    <div class="card-body py-2 px-3">
+                        <div class="d-flex justify-content-between">
+                            <strong style="font-size:0.9rem;">{{ t.titulo }}</strong>
+                            <span class="badge" style="background:{% if t.prioridad == 'urgente' %}var(--accent){% elif t.prioridad == 'alta' %}#fd7e14{% elif t.prioridad == 'media' %}#ffc107{% else %}#28a745{% endif %};font-size:0.65rem;">{{ t.get_prioridad_display }}</span>
+                        </div>
+                        {% if t.asignado_a %}<small style="color:var(--text-muted);"><i class="bi bi-person"></i> {{ t.asignado_a.username }}</small>{% endif %}
+                        {% if t.fecha_limite %}<br><small><i class="bi bi-calendar"></i> {{ t.fecha_limite|date:"d/m" }}</small>{% endif %}
+                        <div class="mt-2 d-flex gap-1">
+                            <a href="{% url 'monitor:tarea_estado' pk=t.pk %}?estado=en_progreso" class="btn btn-sm" style="padding:2px 6px;font-size:0.65rem;background:rgba(255,255,255,0.1);">&#9664;</a>
+                            <a href="{% url 'monitor:tarea_estado' pk=t.pk %}?estado=completada" class="btn btn-sm" style="padding:2px 6px;font-size:0.65rem;background:rgba(40,167,69,0.3);">&#10003; Completar</a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}{% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 mb-4">
+        <div class="card glass-card border-0">
+            <div class="card-header text-center" style="background:rgba(40,167,69,0.1);border:none;">
+                <h6 class="mb-0" style="color:#28a745;">Completada</h6>
+            </div>
+            <div class="card-body" style="min-height:400px;">
+                {% for t in tareas %}{% if t.estado == 'completada' %}
+                <div class="card mb-2" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;">
+                    <div class="card-body py-2 px-3">
+                        <div class="d-flex justify-content-between">
+                            <strong style="font-size:0.9rem;">{{ t.titulo }}</strong>
+                            <span class="badge" style="background:{% if t.prioridad == 'urgente' %}var(--accent){% elif t.prioridad == 'alta' %}#fd7e14{% elif t.prioridad == 'media' %}#ffc107{% else %}#28a745{% endif %};font-size:0.65rem;">{{ t.get_prioridad_display }}</span>
+                        </div>
+                        {% if t.asignado_a %}<small style="color:var(--text-muted);"><i class="bi bi-person"></i> {{ t.asignado_a.username }}</small>{% endif %}
+                    </div>
+                </div>
+                {% endif %}{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+<a href="{% url 'monitor:dashboard' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+{% endblock %}

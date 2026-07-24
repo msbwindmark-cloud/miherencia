@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Webhooks{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-plug"></i> Webhooks</h2>
+</div>
+<div class="card glass-card border-0 mb-4">
+    <div class="card-body">
+        <h6 style="color:var(--gold);">Nuevo Webhook</h6>
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-2">
+                <div class="col-md-3"><input name="nombre" class="form-control" placeholder="Nombre" required></div>
+                <div class="col-md-4"><input name="url" type="url" class="form-control" placeholder="https://hooks.slack.com/..." required></div>
+                <div class="col-md-3">
+                    <select name="evento" class="form-select">
+                        <option value="alerta_nueva">Nueva Alerta</option>
+                        <option value="alerta_resuelta">Alerta Resuelta</option>
+                        <option value="mantenimiento">Nuevo Mantenimiento</option>
+                        <option value="factura">Nueva Factura</option>
+                        <option value="sensor_fallo">Fallo de Sensor</option>
+                    </select>
+                </div>
+                <div class="col-md-2"><button type="submit" class="btn btn-accent w-100"><i class="bi bi-plus"></i> Crear</button></div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="row">
+    {% for w in webhooks %}
+    <div class="col-md-6 mb-3">
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h6 style="color:var(--gold);">{{ w.nombre }}</h6>
+                    <span class="badge" style="background:{% if w.activo %}#28a745{% else %}#6c757d{% endif %};">{% if w.activo %}Activo{% else %}Inactivo{% endif %}</span>
+                </div>
+                <small style="color:var(--text-muted);word-break:break-all;">{{ w.url }}</small><br>
+                <span class="badge" style="background:rgba(212,168,83,0.2);color:var(--gold);">{{ w.get_evento_display }}</span>
+                {% if w.ultimo_envio %}<br><small style="color:var(--text-muted);">Ultimo envio: {{ w.ultimo_envio|date:"d/m H:i" }} {% if w.exitoso %}<span style="color:#28a745;">OK</span>{% else %}<span style="color:var(--accent);">Error</span>{% endif %}</small>{% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-4"><p style="color:var(--text-muted);">No hay webhooks configurados</p></div>
+    {% endfor %}
+</div>
+<a href="{% url 'monitor:dashboard' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+{% endblock %}

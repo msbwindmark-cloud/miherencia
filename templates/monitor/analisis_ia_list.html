@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Análisis IA - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-robot"></i> Análisis IA</h1>
+                <p>Análisis de inteligencia artificial para detección de daños estructurales</p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if edificio %}
+                <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-accent me-2">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-custom alert-dismissible fade show">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if analisis %}
+    <div class="card-custom">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Título</th>
+                            <th>Edificio</th>
+                            <th>Severidad</th>
+                            <th>Confianza</th>
+                            <th>Grietas</th>
+                            <th>Prioridad</th>
+                            <th>Estado</th>
+                            <th>Fecha</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in analisis %}
+                        <tr>
+                            <td class="fw-semibold">{{ a.titulo }}</td>
+                            <td>{{ a.edificio.nombre }}</td>
+                            <td>
+                                <span class="badge rounded-pill {% if a.severidad_detectada == 'critico' %}bg-danger{% elif a.severidad_detectada == 'severo' %}bg-danger{% elif a.severidad_detectada == 'moderado' %}bg-warning text-dark{% elif a.severidad_detectada == 'leve' %}bg-info{% else %}bg-success{% endif %}">
+                                    {{ a.get_severidad_detectada_display }}
+                                </span>
+                            </td>
+                            <td class="fw-bold">{{ a.confianza }}%</td>
+                            <td>{{ a.grietas_detectadas }}</td>
+                            <td>
+                                <span class="badge rounded-pill {% if a.prioridad_ia == 'urgente' %}bg-danger{% elif a.prioridad_ia == 'alta' %}bg-warning text-dark{% elif a.prioridad_ia == 'media' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ a.get_prioridad_ia_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill {% if a.estado == 'completado' %}bg-success{% elif a.estado == 'procesando' %}bg-info{% elif a.estado == 'error' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                    {{ a.get_estado_display }}
+                                </span>
+                            </td>
+                            <td>{{ a.fecha_analisis|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'monitor:analisis_ia_detail' pk=a.pk %}" class="btn btn-sm btn-outline-accent">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-robot" style="color:var(--accent)"></i>
+        <h4>Sin análisis IA</h4>
+        <p class="text-muted">Aún no se han realizado análisis de inteligencia artificial</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

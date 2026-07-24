@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Iniciar Sesión - SmartHeritage{% endblock %}
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center" style="background:var(--gradient-hero);">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="text-center mb-4">
+                    <i class="bi bi-building-columns" style="font-size:3rem;color:var(--gold)"></i>
+                    <h1 class="text-white fw-bold mt-2">SmartHeritage</h1>
+                    <p class="text-white-50">Protege el patrimonio histórico con tecnología</p>
+                </div>
+                <div class="card-custom p-4">
+                    <h4 class="fw-bold mb-4 text-center">Iniciar Sesión</h4>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Usuario</label>
+                            {{ form.username }}
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Contraseña</label>
+                            {{ form.password }}
+                        </div>
+                        <button type="submit" class="btn btn-accent w-100 py-2">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+                        </button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'monitor:register' %}" class="text-decoration-none" style="color:var(--accent)">
+                            ¿No tienes cuenta? Regístrate
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

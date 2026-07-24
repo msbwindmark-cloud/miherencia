@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}MODO EMERGENCIA - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0" style="background:linear-gradient(135deg,#dc3545,#ff6b6b);border-radius:16px;">
+            <div class="card-body text-center p-5">
+                <i class="bi bi-exclamation-triangle-fill" style="font-size:5rem;color:white;"></i>
+                <h1 class="mt-3" style="color:white;font-weight:900;">MODO EMERGENCIA</h1>
+                <p style="color:rgba(255,255,255,0.8);font-size:1.1rem;">Edificio: <strong>{{ edificio.nombre }}</strong></p>
+            </div>
+        </div>
+
+        <div class="card glass-card border-0 mt-4">
+            <div class="card-body">
+                <div class="alert alert-danger" style="border-radius:12px;">
+                    <strong><i class="bi bi-info-circle"></i> Que hace el Modo Emergencia?</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Envia email urgente a todos los responsables</li>
+                        <li>Genera PDF con el estado actual de todos los sensores</li>
+                        <li>Registra la emergencia en el historial</li>
+                        <li>Activa monitoreo de alta frecuencia</li>
+                    </ul>
+                </div>
+
+                <form method="post" onsubmit="return confirm('ACTIVAR MODO EMERGENCIA? Esto enviara emails y generara reportes de emergencia.')">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Motivo de la emergencia</label>
+                        <textarea name="motivo" class="form-control" rows="3" required placeholder="Describe el motivo de la emergencia..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="submit" class="btn btn-lg" style="background:#dc3545;color:white;font-weight:700;padding:12px 40px;"><i class="bi bi-exclamation-triangle"></i> ACTIVAR EMERGENCIA</button>
+                        <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-lg btn-secondary" style="padding:12px 40px;">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

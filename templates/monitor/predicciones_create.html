@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Predicción ML - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-graph-up-arrow"></i> Nueva Predicción ML</h1>
+                <p>Genera una predicción de machine learning para {{ edificio.nombre }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if edificio %}
+                <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-accent me-2">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-custom alert-dismissible fade show">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-custom">
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-semibold">Tipo de Predicción</label>
+                                <select name="tipo" class="form-control" required>
+                                    <option value="mantenimiento">Mantenimiento Preventivo</option>
+                                    <option value="deterioro">Predicción de Deterioro</option>
+                                    <option value="fallo">Predicción de Fallo</option>
+                                    <option value="coste">Estimación de Costes</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-semibold">Título</label>
+                                <input type="text" name="titulo" class="form-control" required placeholder="Ej: Predicción de deterioro fachada norte">
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-semibold">Descripción</label>
+                                <textarea name="descripcion" class="form-control" rows="4" required placeholder="Describe los detalles de la predicción..."></textarea>
+                            </div>
+                        </div>
+                        <div class="alert alert-info alert-custom mb-4">
+                            <i class="bi bi-info-circle me-2"></i>
+                            El sistema generará automáticamente la predicción con datos de confianza, probabilidad e impacto financiero basado en los datos históricos del edificio.
+                        </div>
+                        <div class="d-flex justify-content-between mt-3">
+                            <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-accent btn-lg">
+                                <i class="bi bi-cpu me-2"></i>Generar Predicción
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

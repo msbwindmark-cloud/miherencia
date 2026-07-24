@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}Ranking Global - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-trophy"></i> Ranking Global</h1>
+                <p>Clasificacion de edificios patrimoniales por puntuacion de impacto</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-accent">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card text-center p-3">
+                <i class="bi bi-building fs-2 mb-2" style="color:var(--accent);"></i>
+                <h3 class="mb-0">{{ total_edificios }}</h3>
+                <small class="text-muted">Edificios Registrados</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card text-center p-3">
+                <i class="bi bi-star-fill fs-2 mb-2" style="color:var(--gold);"></i>
+                <h3 class="mb-0">{{ mejor_puntuacion|default:"0" }}</h3>
+                <small class="text-muted">Mejor Puntuacion</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card text-center p-3">
+                <i class="bi bi-graph-up fs-2 mb-2" style="color:var(--success);"></i>
+                <h3 class="mb-0">{{ promedio_puntuacion|default:"0" }}</h3>
+                <small class="text-muted">Promedio General</small>
+            </div>
+        </div>
+    </div>
+    <div class="card-custom">
+        <div class="card-header fw-bold" style="background:var(--accent);color:#fff;">
+            <i class="bi bi-list-ol me-1"></i> Tabla de Ranking
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width:80px;" class="text-center">Rango</th>
+                            <th>Edificio</th>
+                            <th>Ciudad</th>
+                            <th class="text-center">Puntuacion</th>
+                            <th class="text-center">Comentarios</th>
+                            <th class="text-center">Analisis</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for edificio in ranking %}
+                        <tr>
+                            <td class="text-center">
+                                {% if forloop.counter == 1 %}
+                                <span class="badge" style="background:var(--gold);color:#000;font-size:1rem;padding:0.4rem 0.7rem;">
+                                    <i class="bi bi-trophy-fill"></i> 1
+                                </span>
+                                {% elif forloop.counter == 2 %}
+                                <span class="badge bg-secondary" style="font-size:1rem;padding:0.4rem 0.7rem;">
+                                    <i class="bi bi-trophy"></i> 2
+                                </span>
+                                {% elif forloop.counter == 3 %}
+                                <span class="badge" style="background:#cd7f32;color:#000;font-size:1rem;padding:0.4rem 0.7rem;">
+                                    <i class="bi bi-trophy"></i> 3
+                                </span>
+                                {% else %}
+                                <span class="badge" style="background:var(--accent2,#2d2d44);font-size:1rem;padding:0.4rem 0.7rem;">
+                                    {{ forloop.counter }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold">{{ edificio.nombre }}</td>
+                            <td>{{ edificio.ciudad }}</td>
+                            <td class="text-center">
+                                <span class="badge" style="background:var(--accent);font-size:0.9rem;padding:0.3rem 0.6rem;">
+                                    {{ edificio.puntuacion|default:"0" }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <i class="bi bi-chat-dots me-1" style="color:var(--accent2,#aaa);"></i>
+                                {{ edificio.num_comentarios|default:"0" }}
+                            </td>
+                            <td class="text-center">
+                                {% if edificio.puntuacion >= 80 %}
+                                <span class="badge" style="background:var(--success);">Excelente</span>
+                                {% elif edificio.puntuacion >= 60 %}
+                                <span class="badge" style="background:var(--warning);color:#000;">Bueno</span>
+                                {% elif edificio.puntuacion >= 40 %}
+                                <span class="badge" style="background:var(--gold);color:#000;">Regular</span>
+                                {% else %}
+                                <span class="badge" style="background:var(--danger);">Critico</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                No hay edificios en el ranking aun
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Alertas - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1><i class="bi bi-bell"></i> Alertas</h1>
+        <p>Monitorea y resuelve las alertas de tus sensores</p>
+        <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary mt-2"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="d-flex mb-4">
+        <a href="?filtro=activas" class="btn {% if filtro_actual == 'activas' %}btn-accent{% else %}btn-outline-accent{% endif %} me-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>Activas
+        </a>
+        <a href="?filtro=resueltas" class="btn {% if filtro_actual == 'resueltas' %}btn-accent{% else %}btn-outline-accent{% endif %} me-2">
+            <i class="bi bi-check-circle me-1"></i>Resueltas
+        </a>
+        <a href="?filtro=todas" class="btn {% if filtro_actual == 'todas' %}btn-accent{% else %}btn-outline-accent{% endif %}">
+            <i class="bi bi-list me-1"></i>Todas
+        </a>
+    </div>
+
+    {% if alertas %}
+    <div class="card-custom">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Severidad</th>
+                            <th>Sensor</th>
+                            <th>Edificio</th>
+                            <th>Mensaje</th>
+                            <th>Valor</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alerta in alertas %}
+                        <tr>
+                            <td>
+                                <span class="badge rounded-pill {% if alerta.severidad == 'critical' %}bg-danger{% elif alerta.severidad == 'warning' %}bg-warning text-dark{% else %}bg-info{% endif %}">
+                                    {{ alerta.get_severidad_display }}
+                                </span>
+                            </td>
+                            <td class="fw-semibold">{{ alerta.sensor.nombre }}</td>
+                            <td>{{ alerta.sensor.edificio.nombre }}</td>
+                            <td>{{ alerta.mensaje|truncatewords:15 }}</td>
+                            <td class="fw-bold">{{ alerta.valor_detectado }}</td>
+                            <td>{{ alerta.fecha_creacion|date:"d/m H:i" }}</td>
+                            <td>
+                                {% if alerta.resuelta %}
+                                <span class="badge bg-success rounded-pill"><i class="bi bi-check"></i> Resuelta</span>
+                                {% else %}
+                                <span class="badge bg-danger rounded-pill pulse-dot">Activa</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not alerta.resuelta %}
+                                <a href="{% url 'monitor:alerta_resolver' pk=alerta.pk %}" class="btn btn-sm btn-accent">Resolver</a>
+                                <a href="{% url 'monitor:enviar_alerta_email' pk=alerta.pk %}" class="btn btn-sm btn-outline-secondary" title="Enviar por email"><i class="bi bi-envelope"></i></a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-shield-check" style="color:var(--success)"></i>
+        <h4>No hay alertas {% if filtro_actual == 'activas' %}activas{% elif filtro_actual == 'resueltas' %}resueltas{% endif %}</h4>
+        <p class="text-muted">Todo está funcionando correctamente</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

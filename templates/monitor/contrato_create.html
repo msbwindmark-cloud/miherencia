@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Nuevo Contrato{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2 style="color:var(--gold);"><i class="bi bi-file-earmark-text"></i> Nuevo Contrato</h2>
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3"><label class="form-label">Titulo</label><input name="titulo" class="form-control" required placeholder="Ej: Contrato de mantenimiento fachada"></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><textarea name="descripcion" class="form-control" rows="2"></textarea></div>
+                    <div class="mb-3"><label class="form-label">Partes involucradas</label><input name="partes" class="form-control" required placeholder="Empresa ABC, Ayuntamiento de Sevilla"></div>
+                    <div class="mb-3"><label class="form-label">Condiciones</label><textarea name="condiciones" class="form-control" rows="4" required placeholder="Terminos y condiciones del contrato..."></textarea></div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3"><label class="form-label">Monto Total (EUR)</label><input name="monto_total" type="number" step="0.01" class="form-control"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Fecha Inicio</label><input name="fecha_inicio" type="date" class="form-control" required></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Fecha Fin</label><input name="fecha_fin" type="date" class="form-control"></div>
+                    </div>
+                    <button type="submit" class="btn btn-accent w-100"><i class="bi bi-check-circle"></i> Crear Contrato</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

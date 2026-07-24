@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  dev:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DEBUG=True
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    environment:
+      - DEBUG=True
+
+  celery-dev:
+    build: .
+    command: celery -A smart_heritage worker -l info --concurrency=2
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"

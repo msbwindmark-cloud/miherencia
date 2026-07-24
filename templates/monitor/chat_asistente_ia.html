@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Asistente IA{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <h2 style="color:var(--gold);"><i class="bi bi-robot"></i> Asistente IA SmartHeritage</h2>
+        <div class="card glass-card border-0 mb-3">
+            <div class="card-body">
+                <form method="post" class="d-flex gap-2">
+                    {% csrf_token %}
+                    <select name="edificio" class="form-select form-select-dark" style="width:auto;">
+                        <option value="">Contexto general</option>
+                        {% for e in edificios %}<option value="{{ e.pk }}">{{ e.nombre }}</option>{% endfor %}
+                    </select>
+                    <input name="mensaje" class="form-control" placeholder="Pregunta sobre tus edificios..." required>
+                    <button type="submit" class="btn btn-accent"><i class="bi bi-send"></i></button>
+                </form>
+            </div>
+        </div>
+        {% if respuesta %}
+        <div class="card glass-card border-0 mb-3" style="border-left:3px solid var(--gold) !important;">
+            <div class="card-body">
+                <h6 style="color:var(--gold);"><i class="bi bi-robot"></i> Respuesta:</h6>
+                <p>{{ respuesta }}</p>
+            </div>
+        </div>
+        {% endif %}
+        <h6 style="color:var(--text-muted);">Historial:</h6>
+        {% for h in historial %}
+        <div class="card glass-card border-0 mb-2">
+            <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between">
+                    <strong style="color:var(--accent);">Tu:</strong><small style="color:var(--text-muted);">{{ h.fecha|date:"d/m H:i" }}</small>
+                </div>
+                <p class="mb-1">{{ h.mensaje_usuario }}</p>
+                <div class="d-flex justify-content-between">
+                    <strong style="color:var(--gold);">IA:</strong>
+                </div>
+                <p class="mb-0">{{ h.respuesta_ia }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="col-lg-4">
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <h6 style="color:var(--gold);">Preguntas sugeridas:</h6>
+                <button class="btn btn-sm btn-outline-accent w-100 mb-2" onclick="document.querySelector('[name=mensaje]').value='Como esta la salud de mis edificios?'">Salud de edificios</button>
+                <button class="btn btn-sm btn-outline-accent w-100 mb-2" onclick="document.querySelector('[name=mensaje]').value='Que alertas tengo activas?'">Alertas activas</button>
+                <button class="btn btn-sm btn-outline-accent w-100 mb-2" onclick="document.querySelector('[name=mensaje]').value='Recomienda mantenimientos preventivos'">Mantenimiento preventivo</button>
+                <button class="btn btn-sm btn-outline-accent w-100 mb-2" onclick="document.querySelector('[name=mensaje]').value='Resumen financiero del mes'">Resumen financiero</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Tareas Pendientes - SmartHeritage{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-list-check"></i> Panel de Tareas Pendientes</h2>
+    <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--danger);">
+            <h2 style="color:var(--danger);">{{ alertas_criticas|length }}</h2>
+            <p class="text-muted mb-0">Alertas criticas</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--warning);">
+            <h2 style="color:var(--warning);">{{ mantenimientos_vencidos|length }}</h2>
+            <p class="text-muted mb-0">Mantenimientos vencidos</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--accent);">
+            <h2 style="color:var(--accent);">{{ mantenimientos_hoy|length }}</h2>
+            <p class="text-muted mb-0">Para hoy</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--accent2);">
+            <h2 style="color:var(--accent2);">{{ inspecciones_vencidas|length }}</h2>
+            <p class="text-muted mb-0">Inspecciones pendientes</p>
+        </div>
+    </div>
+</div>
+
+{% if alertas_criticas %}
+<div class="glass-card p-4 mb-4">
+    <h5 style="color:var(--danger);"><i class="bi bi-exclamation-octagon me-2"></i>Alertas Criticas - Actuar Ahora</h5>
+    <div class="table-responsive">
+        <table class="table table-dark table-hover">
+            <thead><tr><th>Edificio</th><th>Sensor</th><th>Tipo</th><th>Mensaje</th><th>Fecha</th><th></th></tr></thead>
+            <tbody>
+                {% for a in alertas_criticas %}
+                <tr>
+                    <td><strong>{{ a.sensor.edificio.nombre }}</strong></td>
+                    <td>{{ a.sensor.nombre }}</td>
+                    <td><span class="badge bg-danger">{{ a.get_tipo_alerta_display }}</span></td>
+                    <td>{{ a.mensaje|truncatewords:10 }}</td>
+                    <td><small>{{ a.fecha_creacion|date:"d/m H:i" }}</small></td>
+                    <td><a href="{% url 'monitor:alerta_resolver' pk=a.pk %}" class="btn btn-sm btn-success">Resolver</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="glass-card p-4">
+            <h5 style="color:var(--warning);"><i class="bi bi-tools me-2"></i>Mantenimientos Vencidos</h5>
+            {% for m in mantenimientos_vencidos %}
+            <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div>
+                    <strong>{{ m.titulo }}</strong>
+                    <br><small class="text-muted">{{ m.edificio.nombre }} | {{ m.get_estado_display }}</small>
+                </div>
+                <span class="badge bg-danger">{{ m.fecha_limite|date:"d/m" }}</span>
+            </div>
+            {% empty %}
+            <p class="text-muted">No hay mantenimientos vencidos</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="glass-card p-4">
+            <h5 style="color:var(--accent);"><i class="bi bi-calendar-check me-2"></i>Tareas para Hoy</h5>
+            {% for m in mantenimientos_hoy %}
+            <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div>
+                    <strong>{{ m.titulo }}</strong>
+                    <br><small class="text-muted">{{ m.edificio.nombre }}</small>
+                </div>
+                <span class="badge" style="background:rgba(233,69,96,0.2); color:var(--accent);">Hoy</span>
+            </div>
+            {% empty %}
+            <p class="text-muted">No hay tareas para hoy</p>
+            {% endfor %}
+            {% if inspecciones_vencidas %}
+            <hr style="border-color:rgba(255,255,255,0.1);">
+            <h6 class="text-muted mb-2"><i class="bi bi-clipboard me-1"></i>Inspecciones pendientes</h6>
+            {% for i in inspecciones_vencidas %}
+            <div class="d-flex justify-content-between align-items-center py-1">
+                <small>{{ i.titulo }} - {{ i.edificio.nombre }}</small>
+                <span class="badge bg-secondary">Pendiente</span>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

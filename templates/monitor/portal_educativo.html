@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Portal Educativo{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-mortarboard"></i> Portal Educativo - Patrimonio Historico</h2>
+    <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+<div class="row g-4">
+    {% for recurso in recursos %}
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center h-100" style="cursor:pointer;" onclick="abrirRecurso({{ forloop.counter0 }})">
+            <i class="bi {{ recurso.icono }} display-3 mb-3" style="color:{{ recurso.color }};"></i>
+            <h5>{{ recurso.titulo }}</h5>
+            <p class="text-muted small">{{ recurso.descripcion }}</p>
+            <div class="d-flex justify-content-center gap-2 mb-2">
+                <span class="badge bg-dark">{{ recurso.duracion }}</span>
+                <span class="badge" style="background:rgba(212,168,83,0.2); color:var(--gold);">{{ recurso.nivel }}</span>
+            </div>
+            <span class="badge" style="background:rgba(233,69,96,0.2); color:var(--accent);">Explorar Curso</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<div class="glass-card p-4 mt-4">
+    <h5><i class="bi bi-trophy"></i> Tu Progreso de Aprendizaje</h5>
+    <div class="row g-3 mt-2">
+        <div class="col-md-3 text-center">
+            <div style="width:80px; height:80px; border-radius:50%; border:4px solid var(--accent); display:inline-flex; align-items:center; justify-content:center;">
+                <strong style="color:var(--accent); font-size:1.5em;">0</strong>
+            </div>
+            <p class="small text-muted mt-2 mb-0">Cursos completados</p>
+        </div>
+        <div class="col-md-3 text-center">
+            <div style="width:80px; height:80px; border-radius:50%; border:4px solid var(--gold); display:inline-flex; align-items:center; justify-content:center;">
+                <strong style="color:var(--gold); font-size:1.5em;">0</strong>
+            </div>
+            <p class="small text-muted mt-2 mb-0">Certificados obtenidos</p>
+        </div>
+        <div class="col-md-3 text-center">
+            <div style="width:80px; height:80px; border-radius:50%; border:4px solid var(--accent2); display:inline-flex; align-items:center; justify-content:center;">
+                <strong style="color:var(--accent2); font-size:1.5em;">0</strong>
+            </div>
+            <p class="small text-muted mt-2 mb-0">Horas de estudio</p>
+        </div>
+        <div class="col-md-3 text-center">
+            <div style="width:80px; height:80px; border-radius:50%; border:4px solid var(--success); display:inline-flex; align-items:center; justify-content:center;">
+                <strong style="color:var(--success); font-size:1.5em;">0</strong>
+            </div>
+            <p class="small text-muted mt-2 mb-0">Badges ganados</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const cursos = [
+{% for recurso in recursos %}
+{
+    titulo: "{{ recurso.titulo }}",
+    descripcion: "{{ recurso.descripcion }}",
+    duracion: "{{ recurso.duracion }}",
+    nivel: "{{ recurso.nivel }}",
+    modulos: {{ recurso.modulos|safe }}
+},
+{% endfor %}
+];
+
+function abrirRecurso(idx) {
+    const c = cursos[idx];
+    let modulosHtml = '<ul style="text-align:left; font-size:0.9em; padding-left:20px;">';
+    c.modulos.forEach(function(m, i) {
+        modulosHtml += '<li style="margin-bottom:6px;"><strong style="color:var(--gold);">' + (i+1) + '.</strong> ' + m + '</li>';
+    });
+    modulosHtml += '</ul>';
+    Swal.fire({
+        title: '<i class="bi bi-mortarboard" style="color:var(--gold);"></i> ' + c.titulo,
+        html: '<p style="margin-bottom:8px;">' + c.descripcion + '</p>' +
+              '<div class="d-flex justify-content-center gap-3 mb-3">' +
+              '<span class="badge bg-dark" style="padding:6px 12px;"><i class="bi bi-clock"></i> ' + c.duracion + '</span>' +
+              '<span class="badge" style="padding:6px 12px; background:rgba(212,168,83,0.2); color:var(--gold);"><i class="bi bi-bar-chart"></i> ' + c.nivel + '</span>' +
+              '</div>' +
+              '<hr style="border-color:rgba(255,255,255,0.1)">' +
+              '<h6 style="color:var(--gold); margin-bottom:10px;">Modulos del curso:</h6>' +
+              modulosHtml +
+              '<p class="text-muted small mt-3"><i class="bi bi-info-circle"></i> Modulo en desarrollo - Disponible pronto</p>',
+        icon: 'info',
+        confirmButtonColor: '#d4a853',
+        background: '#1a1a2e',
+        color: '#fff',
+        confirmButtonText: 'Entendido',
+        width: 500
+    });
+}
+</script>
+{% endblock %}

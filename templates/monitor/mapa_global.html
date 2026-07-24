@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Mapa Global{% endblock %}
+{% block content %}
+<h2 style="color:var(--gold);"><i class="bi bi-globe-americas"></i> Mapa Global de Edificios</h2>
+<div class="card glass-card border-0">
+    <div class="card-body p-0">
+        <div id="mapa" style="height:500px;border-radius:12px;"></div>
+    </div>
+</div>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('mapa').setView([37.3891, -5.9845], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: '&copy; OpenStreetMap'}).addTo(map);
+const markers = [{% for m in markers %}{
+    lat: {{ m.lat }}, lng: {{ m.lng }}, nombre: '{{ m.nombre }}', salud: {{ m.salud }}, pk: '{{ m.pk }}'
+},{% endfor %}];
+markers.forEach(m => {
+    const color = m.salud >= 75 ? '#28a745' : m.salud >= 50 ? '#ffc107' : '#dc3545';
+    const icon = L.divIcon({
+        html: '<div style="background:'+color+';width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);">'+m.salud+'</div>',
+        iconSize: [30, 30], className: ''
+    });
+    L.marker([m.lat, m.lng], {icon}).addTo(map).bindPopup('<b>'+m.nombre+'</b><br>Salud: '+m.salud+'%<br><a href="/edificio/'+m.pk+'/">Ver detalle</a>');
+});
+</script>
+<a href="{% url 'monitor:dashboard' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+{% endblock %}

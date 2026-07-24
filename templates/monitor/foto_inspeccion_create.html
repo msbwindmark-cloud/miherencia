@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Subir Foto IA - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2 style="color:var(--gold);"><i class="bi bi-camera"></i> Subir Foto para Analisis IA</h2>
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3"><label class="form-label">Titulo</label><input name="titulo" class="form-control" required placeholder="Ej: Fachada norte"></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><textarea name="descripcion" class="form-control" rows="2"></textarea></div>
+                    <div class="mb-3"><label class="form-label">Foto</label><input name="imagen" type="file" class="form-control" accept="image/*" required></div>
+                    <div class="alert alert-info" style="border-radius:12px;"><i class="bi bi-info-circle"></i> El sistema analizara la foto automaticamente y detectara: grietas, humedad, danos estructurales, desgaste.</div>
+                    <button type="submit" class="btn btn-accent w-100"><i class="bi bi-upload"></i> Subir y Analizar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

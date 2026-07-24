@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard Seguros - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-shield-check"></i> Dashboard Seguros</h1>
+                <p>Panel de control de pólizas de seguro de tus edificios patrimoniales</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-accent">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card text-center p-3">
+                <i class="bi bi-shield-fill-check fs-2 mb-2" style="color:var(--success);"></i>
+                <h4 class="mb-0">{{ total_polizas|default:"0" }}</h4>
+                <small class="text-muted">Total Polizas</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center p-3">
+                <i class="bi bi-check-circle fs-2 mb-2" style="color:var(--success);"></i>
+                <h4 class="mb-0">{{ polizas_activas|default:"0" }}</h4>
+                <small class="text-muted">Activas</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center p-3">
+                <i class="bi bi-exclamation-triangle fs-2 mb-2" style="color:var(--warning);"></i>
+                <h4 class="mb-0">{{ polizas_por_vencer|default:"0" }}</h4>
+                <small class="text-muted">Por Vencer</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center p-3">
+                <i class="bi bi-x-circle fs-2 mb-2" style="color:var(--danger);"></i>
+                <h4 class="mb-0">{{ polizas_vencidas|default:"0" }}</h4>
+                <small class="text-muted">Vencidas</small>
+            </div>
+        </div>
+    </div>
+    <div class="card-custom">
+        <div class="card-header fw-bold" style="background:var(--accent);color:#fff;">
+            <i class="bi bi-shield-check me-1"></i> Polizas de Seguro
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Edificio</th>
+                            <th>Aseguradora</th>
+                            <th>Poliza No.</th>
+                            <th class="text-center">Vigencia</th>
+                            <th class="text-center">Vencimiento</th>
+                            <th class="text-end">Monto Cobertura</th>
+                            <th class="text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for poliza in polizas %}
+                        <tr>
+                            <td class="fw-bold">{{ poliza.edificio.nombre }}</td>
+                            <td>{{ poliza.aseguradora }}</td>
+                            <td><code style="color:var(--accent);">{{ poliza.numero_poliza }}</code></td>
+                            <td class="text-center">{{ poliza.fecha_inicio|date:"d/m/Y" }}</td>
+                            <td class="text-center">{{ poliza.fecha_vencimiento|date:"d/m/Y" }}</td>
+                            <td class="text-end fw-bold" style="color:var(--gold);">${{ poliza.monto_cobertura|floatformat:2 }}</td>
+                            <td class="text-center">
+                                {% if poliza.estado == 'activa' %}
+                                <span class="badge" style="background:var(--success);">Activa</span>
+                                {% elif poliza.estado == 'por_vencer' %}
+                                <span class="badge" style="background:var(--warning);color:#000;">Por Vencer</span>
+                                {% elif poliza.estado == 'vencida' %}
+                                <span class="badge" style="background:var(--danger);">Vencida</span>
+                                {% else %}
+                                <span class="badge" style="background:var(--accent2,#555);">{{ poliza.get_estado_display }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-shield-x fs-3 d-block mb-2"></i>
+                                No hay polizas registradas
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

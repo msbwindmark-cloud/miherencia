@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Certificados Blockchain - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-key"></i> Certificados Blockchain</h1>
+                <p>Certificados inmutables en blockchain para el patrimonio</p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if edificio %}
+                <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-accent me-2">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-custom alert-dismissible fade show">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if certificados %}
+    <div class="card-custom">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Título</th>
+                            <th>Edificio</th>
+                            <th>Hash</th>
+                            <th>Emisor</th>
+                            <th>Validado</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in certificados %}
+                        <tr>
+                            <td>
+                                <span class="badge rounded-pill {% if c.tipo == 'propiedad' %}bg-primary{% elif c.tipo == 'restauracion' %}bg-success{% elif c.tipo == 'inspeccion' %}bg-info{% elif c.tipo == 'nft' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ c.get_tipo_display }}
+                                </span>
+                            </td>
+                            <td class="fw-semibold">{{ c.titulo }}</td>
+                            <td>{{ c.edificio.nombre }}</td>
+                            <td><code class="small">{{ c.hash_transaccion|truncatechars:20 }}...</code></td>
+                            <td>{{ c.emisor.username }}</td>
+                            <td>
+                                {% if c.validado %}
+                                <span class="badge bg-success rounded-pill"><i class="bi bi-check"></i> Validado</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark rounded-pill">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ c.fecha_emision|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-key" style="color:var(--accent)"></i>
+        <h4>Sin certificados blockchain</h4>
+        <p class="text-muted">Aún no se han emitido certificados en blockchain</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

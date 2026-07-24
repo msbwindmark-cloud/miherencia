@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Nueva Cuenta Contable{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <h2 style="color:var(--gold);"><i class="bi bi-journal-ledger"></i> Nueva Cuenta Contable</h2>
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3"><label class="form-label">Codigo</label><input name="codigo" class="form-control" required placeholder="Ej: 570000"></div>
+                    <div class="mb-3"><label class="form-label">Nombre</label><input name="nombre" class="form-control" required placeholder="Ej: Banco Principal"></div>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <select name="tipo" class="form-select"><option value="activo">Activo</option><option value="pasivo">Pasivo</option><option value="ingreso">Ingreso</option><option value="gasto">Gasto</option></select>
+                    </div>
+                    <button type="submit" class="btn btn-accent w-100"><i class="bi bi-check-circle"></i> Crear Cuenta</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

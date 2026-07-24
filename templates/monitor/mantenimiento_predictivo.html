@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Mantenimiento Predictivo{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-cpu"></i> Mantenimiento Predictivo</h2>
+</div>
+<div class="card glass-card border-0 mb-4">
+    <div class="card-body">
+        <p style="color:var(--text-muted);">El sistema analiza patrones de datos de tus sensores para predecir fallos antes de que ocurran. Asi ahorras dinero y previenes problemas.</p>
+    </div>
+</div>
+<div class="row">
+    {% for p in predicciones %}
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card glass-card border-0 h-100">
+            <div class="card-body">
+                <h6 style="color:var(--gold);">{{ p.titulo }}</h6>
+                <p>{{ p.descripcion|truncatewords:30 }}</p>
+                <div class="mb-2">
+                    <span class="badge" style="background:{% if p.prioridad == 'urgente' %}var(--accent){% elif p.prioridad == 'alta' %}#fd7e14{% elif p.prioridad == 'media' %}#ffc107{% else %}#28a745{% endif %};">{{ p.get_prioridad_display }}</span>
+                    <span class="badge bg-secondary">{{ p.probabilidad_fallo }}% fallo</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;margin-bottom:8px;">
+                    <small><strong>Dias estimados:</strong> {{ p.dias_estimados }}d</small><br>
+                    <small><strong>Costo estimado:</strong> ${{ p.costo_estimado }}</small>
+                </div>
+                <p style="font-size:13px;"><strong>Accion recomendada:</strong> {{ p.accion_recomendada }}</p>
+                <div class="progress mb-2" style="height:6px;background:rgba(255,255,255,0.1);">
+                    <div class="progress-bar" style="width:{{ p.probabilidad_fallo }}%;background:{% if p.probabilidad_fallo > 80 %}var(--accent){% elif p.probabilidad_fallo > 50 %}#fd7e14{% else %}#28a745{% endif %};"></div>
+                </div>
+                {% if p.implementada %}<span class="badge bg-success">Implementada</span>{% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <i class="bi bi-cpu" style="font-size:3rem;color:var(--text-muted);"></i>
+        <p class="mt-2" style="color:var(--text-muted);">No hay predicciones de mantenimiento aun.</p>
+        <p style="color:var(--text-muted);">Agrega sensores y lecturas para que el sistema pueda analizar patrones.</p>
+    </div>
+    {% endfor %}
+</div>
+<a href="{% url 'monitor:edificio_list' %}" class="btn btn-sm btn-outline-secondary mt-4"><i class="bi bi-arrow-left"></i> Volver</a>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Facturas{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-receipt"></i> Facturas <span style="font-size:1rem;color:var(--text-muted);">| Pendiente: <strong style="color:#fd7e14;">${{ total_pendiente|floatformat:0 }}</strong> | Pagado: <strong style="color:#28a745;">${{ total_pagado|floatformat:0 }}</strong></span></h2>
+    <div class="d-flex gap-2">
+        <select onchange="if(this.value)window.location.href='?tipo='+this.value" class="form-select form-select-dark" style="width:auto;">
+            <option value="">Todas</option>
+            <option value="emitted">Emitidas</option>
+            <option value="received">Recibidas</option>
+        </select>
+        <select onchange="if(this.value)window.location.href='?estado='+this.value" class="form-select form-select-dark" style="width:auto;">
+            <option value="">Todos los estados</option>
+            <option value="borrador">Borrador</option>
+            <option value="enviada">Enviada</option>
+            <option value="pagada">Pagada</option>
+            <option value="vencida">Vencida</option>
+        </select>
+    </div>
+</div>
+<div class="card glass-card border-0">
+    <div class="card-body">
+        <table class="table table-dark table-hover mb-0">
+            <thead><tr><th>Numero</th><th>Tipo</th><th>Cliente/Prov.</th><th>Concepto</th><th>Base</th><th>IVA</th><th>Total</th><th>Estado</th><th>Emision</th><th>Acciones</th></tr></thead>
+            <tbody>
+            {% for f in facturas %}
+            <tr>
+                <td><strong>{{ f.numero }}</strong></td>
+                <td><span class="badge" style="background:{% if f.tipo == 'emitted' %}#28a745{% else %}#17a2b8{% endif %};">{{ f.get_tipo_display }}</span></td>
+                <td>{{ f.cliente_proveedor }}</td>
+                <td>{{ f.concepto|truncatewords:5 }}</td>
+                <td>${{ f.base_imponible|floatformat:2 }}</td>
+                <td>${{ f.importe_iva|floatformat:2 }}</td>
+                <td style="color:var(--gold);font-weight:700;">${{ f.total|floatformat:2 }}</td>
+                <td><span class="badge" style="background:{% if f.estado == 'pagada' %}#28a745{% elif f.estado == 'vencida' %}var(--accent){% elif f.estado == 'enviada' %}#ffc107{% else %}#6c757d{% endif %};">{{ f.get_estado_display }}</span></td>
+                <td>{{ f.fecha_emision|date:"d/m/Y" }}</td>
+                <td>
+                    <a href="{% url 'monitor:factura_pdf' pk=f.pk %}" class="btn btn-sm btn-outline-accent" title="Descargar PDF"><i class="bi bi-file-pdf"></i></a>
+                    {% if f.estado != 'pagada' %}<a href="{% url 'monitor:factura_estado' pk=f.pk %}?estado=pagada" class="btn btn-sm btn-outline-success" title="Marcar pagada"><i class="bi bi-check-circle"></i></a>{% endif %}
+                </td>
+            </tr>
+            {% empty %}<tr><td colspan="10" class="text-center" style="color:var(--text-muted);">No hay facturas</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<a href="{% url 'monitor:panel_financiero' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Panel Financiero</a>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Registrarse como Voluntario{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-plus"></i> Registro de Voluntariado</h2>
+    <a href="{% url 'monitor:voluntarios_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+<div class="glass-card p-4" style="max-width:700px;">
+    <div class="text-center mb-4">
+        <i class="bi bi-heart" style="font-size:3em; color:var(--accent);"></i>
+        <h4>Unete a proteger nuestro patrimonio</h4>
+        <p class="text-muted">Registrate como voluntario y ayuda a preservar los edificios historicos de tu ciudad</p>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Habilidades y Experiencia</label>
+            <textarea name="habilidades" class="form-control form-control-dark" rows="4" placeholder="Describe tus habilidades, experiencia previa, titulacion..."></textarea>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Disponibilidad</label>
+            <select name="disponibilidad" class="form-select form-select-dark">
+                <option value="fines de semana">Fines de semana</option>
+                <option value="tardes">Tardes entre semana</option>
+                <option value="mananas">Mananas entre semana</option>
+                <option value="flexible">Flexible</option>
+                <option value="eventos puntuales">Solo eventos puntuales</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-accent w-100 btn-lg"><i class="bi bi-heart-fill"></i> Unirse como Voluntario</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,711 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="SmartHeritage - Monitoreo y preservacion de edificios historicos">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <title>{% block title %}SmartHeritage{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #e94560;
+            --accent2: #0f3460;
+            --gold: #d4a853;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --bg-dark: #0f0f23;
+            --bg-card: #ffffff;
+            --text-primary: #1a1a2e;
+            --text-secondary: #6c757d;
+            --gradient-hero: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --gradient-accent: linear-gradient(135deg, #e94560 0%, #d4a853 100%);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.16);
+            --shadow-glow: 0 0 30px rgba(233,69,96,0.15);
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+
+        body.dark-mode {
+            --bg-card: #1a1a2e;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+        }
+
+        body.dark-mode { background: #0a0a1a; color: #e0e0e0; }
+        body.dark-mode .card-custom { background: #1a1a2e; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        body.dark-mode .stat-card { background: #1a1a2e; }
+        body.dark-mode .table-custom thead th { background: #16213e; color: #a0a0a0; }
+        body.dark-mode .table-custom tbody td { border-bottom-color: rgba(255,255,255,0.05); }
+        body.dark-mode .form-control, body.dark-mode .form-select { background: #16213e; color: #e0e0e0; border-color: #2a2a4e; }
+        body.dark-mode .form-control:focus { background: #1a1a2e; color: #fff; }
+        body.dark-mode .dropdown-menu { background: #1a1a2e; }
+        body.dark-mode .dropdown-item { color: #e0e0e0; }
+        body.dark-mode .dropdown-item:hover { background: rgba(233,69,96,0.15); }
+        body.dark-mode .hero-section { background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0f3460 100%); }
+
+        .dark-toggle {
+            cursor: pointer; color: rgba(255,255,255,0.8); font-size: 1.1rem;
+            padding: 0.4rem; border-radius: 8px; transition: all 0.3s;
+        }
+        .dark-toggle:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        * { font-family: 'Inter', sans-serif; }
+
+        body {
+            background: #f0f2f5;
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .navbar-custom {
+            background: var(--gradient-hero) !important;
+            padding: 0.8rem 0;
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(10px);
+        }
+
+        .navbar-custom .navbar-brand {
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: white !important;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-custom .navbar-brand i {
+            color: var(--gold);
+            margin-right: 8px;
+        }
+
+        .navbar-custom .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem !important;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s ease;
+        }
+
+        .navbar-custom .nav-link:hover,
+        .navbar-custom .nav-link.active {
+            color: white !important;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .btn-accent {
+            background: var(--gradient-accent);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 0.6rem 1.5rem;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(233,69,96,0.3);
+        }
+
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(233,69,96,0.4);
+            color: white;
+        }
+
+        .btn-outline-accent {
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            font-weight: 600;
+            padding: 0.6rem 1.5rem;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-accent:hover {
+            background: var(--accent);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .card-custom {
+            background: var(--bg-card);
+            border: none;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .card-custom:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-custom .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            padding: 1.2rem 1.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0,0,0,0.02) 0%, transparent 70%);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-card .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .stat-card .stat-number {
+            font-size: 1.8rem;
+            font-weight: 800;
+            line-height: 1;
+            margin: 0.5rem 0;
+        }
+
+        .stat-card .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .badge-heritage {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-excelente { background: #d4edda; color: #155724; }
+        .badge-bueno { background: #d1ecf1; color: #0c5460; }
+        .badge-regular { background: #fff3cd; color: #856404; }
+        .badge-malo { background: #f8d7da; color: #721c24; }
+        .badge-critico { background: #dc3545; color: white; }
+
+        .progress-heritage {
+            height: 8px;
+            border-radius: 10px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+
+        .progress-heritage .bar {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1s ease;
+        }
+
+        .table-custom {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table-custom thead th {
+            background: #f8f9fa;
+            border: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 1rem 1.2rem;
+        }
+
+        .table-custom tbody td {
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            vertical-align: middle;
+        }
+
+        .table-custom tbody tr:hover {
+            background: rgba(233,69,96,0.03);
+        }
+
+        .alert-custom {
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.2rem;
+            border-left: 4px solid;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(233,69,96,0.15);
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 0.7rem 1rem;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-bottom: 2px;
+        }
+
+        .sidebar-link:hover, .sidebar-link.active {
+            background: rgba(233,69,96,0.08);
+            color: var(--accent);
+        }
+
+        .sidebar-link i {
+            margin-right: 10px;
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .hero-section {
+            background: var(--gradient-hero);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .hero-section h1 {
+            font-weight: 800;
+            font-size: 2rem;
+        }
+
+        .hero-section p {
+            opacity: 0.8;
+            font-size: 1.05rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #dee2e6;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h4 {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
+
+        .footer-custom {
+            background: var(--primary);
+            color: rgba(255,255,255,0.6);
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        .footer-custom a { color: var(--gold); text-decoration: none; }
+
+        @media (max-width: 768px) {
+            .stat-card .stat-number { font-size: 1.4rem; }
+            .hero-section h1 { font-size: 1.5rem; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'monitor:dashboard' %}">
+                <i class="bi bi-building-columns"></i>SmartHeritage
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="bi bi-list text-white fs-4"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'monitor:dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'mapa_global' %}active{% endif %}" href="{% url 'monitor:mapa_global' %}">
+                            <i class="bi bi-globe-americas"></i> Mapa
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'edificio' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'monitor:edificio_list' %}">
+                            <i class="bi bi-building"></i> Edificios
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'comparativa' %}active{% endif %}" href="{% url 'monitor:comparativa' %}">
+                            <i class="bi bi-bar-chart-line"></i> Comparar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_tiempo_real' %}active{% endif %}" href="{% url 'monitor:dashboard_tiempo_real' %}">
+                            <i class="bi bi-broadcast"></i> Vivo
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'alerta' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'monitor:alerta_list' %}">
+                            <i class="bi bi-bell"></i> Alertas
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-gear"></i> Más
+                        </a>
+                        <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="{% url 'monitor:calendario' %}"><i class="bi bi-calendar3 me-2"></i>Calendario</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:gamificacion' %}"><i class="bi bi-trophy me-2"></i>Gamificacion</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:equipo_list' %}"><i class="bi bi-people me-2"></i>Equipos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:mantenimiento_list' %}"><i class="bi bi-tools me-2"></i>Mantenimientos</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:chatbot_ia' %}"><i class="bi bi-robot me-2"></i>Chatbot IA</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:galeria_list' %}"><i class="bi bi-images me-2"></i>Galeria Antes/Despues</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:ranking_global' %}"><i class="bi bi-trophy me-2"></i>Ranking Global</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_energia' %}"><i class="bi bi-lightning-charge me-2"></i>Dashboard Energia</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_seguros' %}"><i class="bi bi-shield-check me-2"></i>Dashboard Seguros</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_legal' %}"><i class="bi bi-bank me-2"></i>Dashboard Legal</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:mapa_reportes' %}"><i class="bi bi-flag me-2"></i>Mapa Reportes</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:analisis_ia_list' %}"><i class="bi bi-robot me-2"></i>Analisis IA</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:predicciones_list' %}"><i class="bi bi-cpu me-2"></i>Predicciones ML</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:donacion_list' %}"><i class="bi bi-heart me-2"></i>Donaciones</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:reporte_ciudadano_list' %}"><i class="bi bi-flag me-2"></i>Reportes Ciudadanos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:seguro_list' %}"><i class="bi bi-shield-check me-2"></i>Seguros</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:eficiencia_energetica_list' %}"><i class="bi bi-lightning-charge me-2"></i>Energia</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:cumplimiento_legal_list' %}"><i class="bi bi-bank me-2"></i>Cumplimiento Legal</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:certificado_blockchain_list' %}"><i class="bi bi-link-45deg me-2"></i>Blockchain</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:tour_virtual_list' %}"><i class="bi bi-badge-3d me-2"></i>Tours Virtuales</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:evento_list' %}"><i class="bi bi-calendar-event me-2"></i>Eventos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:tienda_list' %}"><i class="bi bi-shop me-2"></i>Tienda</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:tareas_pendientes' %}"><i class="bi bi-list-check me-2"></i>Tareas Pendientes</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_inversores' %}"><i class="bi bi-graph-up-arrow me-2"></i>Dashboard Inversores</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:comparativa_periodos' %}"><i class="bi bi-arrow-left-right me-2"></i>Comparativa Periodos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:configurar_email' %}"><i class="bi bi-envelope me-2"></i>Configurar Email</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:anomalias_list' %}"><i class="bi bi-exclamation-triangle me-2"></i>Anomalias IA</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:herramienta_list' %}"><i class="bi bi-tools me-2"></i>Herramientas</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:portal_educativo' %}"><i class="bi bi-mortarboard me-2"></i>Portal Educativo</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:voluntarios_list' %}"><i class="bi bi-people me-2"></i>Voluntarios</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:reportes_automaticos' %}"><i class="bi bi-file-earmark-bar-graph me-2"></i>Reportes Automaticos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:mantenimiento_predictivo' %}"><i class="bi bi-cpu me-2"></i>Mantenimiento Predictivo</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:comparativa_ciudades' %}"><i class="bi bi-geo-alt me-2"></i>Comparativa Ciudades</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:resumen_diario' %}"><i class="bi bi-envelope-check me-2"></i>Enviar Resumen Diario</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:panel_financiero' %}"><i class="bi bi-cash-stack me-2"></i>Panel Financiero</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:ingreso_list' %}"><i class="bi bi-plus-circle me-2"></i>Ingresos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:gasto_list' %}"><i class="bi bi-dash-circle me-2"></i>Gastos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:factura_list' %}"><i class="bi bi-receipt me-2"></i>Facturas</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:nomina_list' %}"><i class="bi bi-people me-2"></i>Nominas</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:presupuesto_list' %}"><i class="bi bi-wallet2 me-2"></i>Presupuestos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:cuenta_contable_list' %}"><i class="bi bi-journal-ledger me-2"></i>Cuentas Contables</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:notificaciones_push' %}"><i class="bi bi-bell me-2"></i>Notificaciones Push</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:backup_detail' %}"><i class="bi bi-download me-2"></i>Backup</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:sms_config' %}"><i class="bi bi-phone me-2"></i>SMS/WhatsApp</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:audit_log' %}"><i class="bi bi-journal-text me-2"></i>Audit Log</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:chat_asistente_ia' %}"><i class="bi bi-robot me-2"></i>Asistente IA</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:kanban' %}"><i class="bi bi-kanban me-2"></i>Kanban Tareas</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:mapa_global' %}"><i class="bi bi-globe me-2"></i>Mapa Global</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:cita_list' %}"><i class="bi bi-calendar-check me-2"></i>Citas</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:foto_inspeccion_list' %}"><i class="bi bi-camera me-2"></i>Fotos IA</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:contrato_list' %}"><i class="bi bi-file-earmark-text me-2"></i>Contratos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:inventario_list' %}"><i class="bi bi-box-seam me-2"></i>Inventario</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:bitacora_list' %}"><i class="bi bi-journal-text me-2"></i>Bitacora Obras</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:whatsapp_config' %}"><i class="bi bi-whatsapp me-2"></i>WhatsApp</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/swagger/" target="_blank"><i class="bi bi-code-slash me-2"></i>Swagger API Docs</a></li>
+                            <li><a class="dropdown-item" href="/redoc/" target="_blank"><i class="bi bi-file-earmark-text me-2"></i>ReDoc API</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    {% if hijri.completa %}
+                    <li class="nav-item d-none d-lg-flex align-items-center me-2" style="border-right:1px solid rgba(255,255,255,0.15);padding-right:12px;">
+                        <div class="text-end" style="line-height:1.2;">
+                            <div style="font-size:0.65rem;color:var(--gold);font-weight:600;letter-spacing:0.5px;">☪ {{ hijri.completa }}</div>
+                            <div style="font-size:0.6rem;color:rgba(255,255,255,0.5);">{{ fecha_completa.hora }}</div>
+                        </div>
+                    </li>
+                    {% endif %}
+                    {% if prayer_times.fajr != '--:--' %}
+                    <li class="nav-item d-none d-xl-flex align-items-center me-2" style="border-right:1px solid rgba(255,255,255,0.15);padding-right:12px;">
+                        <div class="text-end" style="line-height:1.2;">
+                            <div style="font-size:0.65rem;color:rgba(255,255,255,0.5);letter-spacing:0.5px;">PROXIMA SALAT</div>
+                            <div style="font-size:0.75rem;color:#fff;font-weight:700;">{{ prayer_times.next_prayer_name }} {{ prayer_times.next_prayer_time }}</div>
+                        </div>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link dark-toggle" onclick="toggleDarkMode()" title="Modo Oscuro">
+                            <i class="bi bi-moon-stars" id="darkIcon"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{% url 'monitor:notificaciones' %}">
+                            <i class="bi bi-bell"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" title="Idioma">
+                            <i class="bi bi-translate"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><a class="dropdown-item" href="{% url 'monitor:cambiar_idioma' %}" onclick="event.preventDefault();document.getElementById('lang-es').submit();">🇪🇸 Espanol</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:cambiar_idioma' %}" onclick="event.preventDefault();document.getElementById('lang-en').submit();">🇬🇧 English</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:cambiar_idioma' %}" onclick="event.preventDefault();document.getElementById('lang-ar').submit();">🇸🇦 العربية</a></li>
+                        </ul>
+                        <form id="lang-es" method="post" action="{% url 'monitor:cambiar_idioma' %}" style="display:none;">{% csrf_token %}<input type="hidden" name="idioma" value="es"></form>
+                        <form id="lang-en" method="post" action="{% url 'monitor:cambiar_idioma' %}" style="display:none;">{% csrf_token %}<input type="hidden" name="idioma" value="en"></form>
+                        <form id="lang-ar" method="post" action="{% url 'monitor:cambiar_idioma' %}" style="display:none;">{% csrf_token %}<input type="hidden" name="idioma" value="ar"></form>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ user.get_full_name|default:user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><a class="dropdown-item" href="{% url 'monitor:gamificacion' %}"><i class="bi bi-trophy me-2"></i>Mis Puntos</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main>
+        {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-custom alert-dismissible fade show" role="alert">
+                <i class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% elif message.tags == 'warning' %}exclamation-triangle-fill{% elif message.tags == 'error' %}x-circle-fill{% else %}info-circle-fill{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {% if user.is_authenticated %}
+    <footer class="footer-custom">
+        <div class="container text-center">
+            <p class="mb-1"><i class="bi bi-building-columns" style="color:var(--gold)"></i> <strong>SmartHeritage</strong> &copy; 2026</p>
+            <small>Protegiendo el patrimonio histórico con tecnología</small>
+        </div>
+    </footer>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(function(registration) {
+                    console.log('SW registered:', registration.scope);
+                })
+                .catch(function(err) {
+                    console.log('SW registration failed:', err);
+                });
+        }
+    </script>
+    <script>
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('smartheritage_dark', isDark);
+            const icon = document.getElementById('darkIcon');
+            icon.className = isDark ? 'bi bi-sun' : 'bi bi-moon-stars';
+        }
+        if (localStorage.getItem('smartheritage_dark') === 'true') {
+            document.body.classList.add('dark-mode');
+            const icon = document.getElementById('darkIcon');
+            if (icon) icon.className = 'bi bi-sun';
+        }
+    </script>
+    <script>
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const form = this.closest('form');
+                Swal.fire({
+                    title: '¿Estás seguro?',
+                    text: 'Esta acción no se puede deshacer',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e94560',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) { form.submit(); }
+                });
+            });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+
+    <!-- VOZ COMMANDS - Web Speech API -->
+    {% if user.is_authenticated %}
+    <div id="voiceBtn" onclick="startVoice()" title="Comando por voz" style="position:fixed; bottom:90px; right:20px; z-index:9999; width:50px; height:50px; border-radius:50%; background:var(--gradient-accent); border:none; color:#fff; font-size:1.2rem; cursor:pointer; box-shadow:0 4px 20px rgba(233,69,96,0.4); display:flex; align-items:center; justify-content:center; transition:all 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        <i class="bi bi-mic"></i>
+    </div>
+    <div id="voiceFeedback" style="display:none; position:fixed; bottom:150px; right:20px; z-index:9999; background:rgba(26,26,46,0.95); color:#fff; padding:12px 20px; border-radius:12px; border:1px solid var(--accent); font-size:0.85rem; max-width:280px; backdrop-filter:blur(10px);">
+        <i class="bi bi-mic-fill" style="color:var(--accent); animation:pulse 1s infinite;"></i> Escuchando...
+    </div>
+    <style>@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }</style>
+    <script>
+    function startVoice() {
+        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+            Swal.fire({title:'No soportado', text:'Tu navegador no soporta reconocimiento de voz', icon:'info', confirmButtonColor:'#d4a853', background:'#1a1a2e', color:'#fff'});
+            return;
+        }
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'es-ES';
+        recognition.interimResults = false;
+        const fb = document.getElementById('voiceFeedback');
+        fb.style.display = 'block';
+        fb.innerHTML = '<i class="bi bi-mic-fill" style="color:var(--accent); animation:pulse 1s infinite;"></i> Escuchando...';
+        recognition.onresult = function(e) {
+            const cmd = e.results[0][0].transcript.toLowerCase();
+            fb.innerHTML = '<i class="bi bi-check-circle" style="color:var(--success);"></i> "' + cmd + '"';
+            setTimeout(() => { fb.style.display = 'none'; }, 2000);
+            const routes = {
+                'dashboard': '{% url "monitor:dashboard" %}', 'inicio': '{% url "monitor:dashboard" %}',
+                'edificios': '{% url "monitor:edificio_list" %}', 'edificio': '{% url "monitor:edificio_list" %}',
+                'alertas': '{% url "monitor:alerta_list" %}', 'alerta': '{% url "monitor:alerta_list" %}',
+                'sensores': '{% url "monitor:edificio_list" %}',
+                'chatbot': '{% url "monitor:chatbot_ia" %}', 'chat': '{% url "monitor:chatbot_ia" %}',
+                'galeria': '{% url "monitor:galeria_list" %}',
+                'ranking': '{% url "monitor:ranking_global" %}',
+                'herramientas': '{% url "monitor:herramienta_list" %}',
+                'inspecciones': '{% url "monitor:edificio_list" %}',
+                'documentos': '{% url "monitor:edificio_list" %}',
+                'voluntarios': '{% url "monitor:voluntarios_list" %}',
+                'educacion': '{% url "monitor:portal_educativo" %}',
+                'anomalias': '{% url "monitor:anomalias_list" %}',
+                'eventos': '{% url "monitor:evento_list" %}',
+                'tienda': '{% url "monitor:tienda_list" %}',
+                'donaciones': '{% url "monitor:donacion_list" %}',
+                'mapa': '{% url "monitor:mapa_global" %}',
+                'energia': '{% url "monitor:dashboard_energia" %}',
+                'seguros': '{% url "monitor:dashboard_seguros" %}',
+            };
+            let found = false;
+            for (const [key, url] of Object.entries(routes)) {
+                if (cmd.includes(key)) { window.location.href = url; found = true; break; }
+            }
+            if (!found) { Swal.fire({title:'No entendido', text:'Intenta: "dashboard", "edificios", "alertas"...', icon:'question', confirmButtonColor:'#d4a853', background:'#1a1a2e', color:'#fff'}); }
+        };
+        recognition.onerror = function() { fb.style.display = 'none'; };
+        recognition.onend = function() { setTimeout(() => { fb.style.display = 'none'; }, 500); };
+        recognition.start();
+    }
+    </script>
+
+    <!-- COMPARTIR REDES SOCIALES -->
+    <div id="shareBtn" onclick="compartirApp()" title="Compartir en redes" style="position:fixed; bottom:150px; right:20px; z-index:9999; width:50px; height:50px; border-radius:50%; background:linear-gradient(135deg, #3b5998, #1da1f2); border:none; color:#fff; font-size:1.2rem; cursor:pointer; box-shadow:0 4px 20px rgba(29,161,242,0.4); display:flex; align-items:center; justify-content:center; transition:all 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        <i class="bi bi-share"></i>
+    </div>
+    <script>
+    function compartirApp() {
+        const url = window.location.href;
+        const title = 'SmartHeritage - Patrimonio Historico Inteligente';
+        const text = 'Mira esta plataforma unica de monitoreo de edificios historicos con IoT, IA y mas!';
+        if (navigator.share) {
+            navigator.share({ title: title, text: text, url: url });
+        } else {
+            Swal.fire({
+                title: 'Compartir SmartHeritage',
+                html: '<div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">' +
+                    '<a href="https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url) + '" target="_blank" class="btn" style="background:#3b5998;color:#fff;"><i class="bi bi-facebook"></i> Facebook</a>' +
+                    '<a href="https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url) + '" target="_blank" class="btn" style="background:#1da1f2;color:#fff;"><i class="bi bi-twitter-x"></i> Twitter</a>' +
+                    '<a href="https://wa.me/?text=' + encodeURIComponent(text + ' ' + url) + '" target="_blank" class="btn" style="background:#25d366;color:#fff;"><i class="bi bi-whatsapp"></i> WhatsApp</a>' +
+                    '<a href="https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(url) + '" target="_blank" class="btn" style="background:#0077b5;color:#fff;"><i class="bi bi-linkedin"></i> LinkedIn</a>' +
+                    '<a href="https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text) + '" target="_blank" class="btn" style="background:#0088cc;color:#fff;"><i class="bi bi-telegram"></i> Telegram</a>' +
+                    '</div>',
+                showConfirmButton: false,
+                background: '#1a1a2e', color: '#fff',
+                showCloseButton: true
+            });
+        }
+    }
+    </script>
+    {% endif %}
+
+    {% include 'monitor/tour_guiado.html' %}
+</body>
+</html>

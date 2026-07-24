@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Nueva Nomina{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2 style="color:var(--gold);"><i class="bi bi-people"></i> Nueva Nomina</h2>
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Empleado</label>
+                            <select name="empleado" class="form-select" required>
+                                {% for u in usuarios %}<option value="{{ u.pk }}">{{ u.get_full_name|default:u.username }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Edificio (opcional)</label>
+                            <select name="edificio" class="form-select">
+                                <option value="">Sin edificio</option>
+                                {% for e in edificios %}<option value="{{ e.pk }}">{{ e.nombre }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Salario Base (EUR)</label><input name="salario_base" type="number" step="0.01" class="form-control" required onkeyup="calcNomina()"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Complemento (EUR)</label><input name="complemento" type="number" step="0.01" class="form-control" value="0" onkeyup="calcNomina()"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Bonus/Incentivos (EUR)</label><input name="bonus" type="number" step="0.01" class="form-control" value="0" onkeyup="calcNomina()"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Retenciones (EUR)</label><input name="retenciones" type="number" step="0.01" class="form-control" value="0" onkeyup="calcNomina()"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Seguridad Social (EUR)</label><input name="seguridad_social" type="number" step="0.01" class="form-control" value="0" onkeyup="calcNomina()"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">NETO ESTIMADO</label><input type="text" class="form-control" id="netoCalc" readonly style="font-weight:700;color:var(--gold);font-size:1.2rem;"></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Periodo</label><input name="periodo" class="form-control" required placeholder="Ej: Enero 2025"></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Fecha de Pago</label><input name="fecha_pago" type="date" class="form-control" required></div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Estado</label>
+                            <select name="estado" class="form-select"><option value="pendiente">Pendiente</option><option value="pagada">Pagada</option></select>
+                        </div>
+                        <div class="col-12 mb-3"><label class="form-label">Notas</label><textarea name="notas" class="form-control" rows="2"></textarea></div>
+                    </div>
+                    <button type="submit" class="btn btn-accent w-100 mt-3"><i class="bi bi-check-circle"></i> Crear Nomina</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function calcNomina() {
+    const base = parseFloat(document.querySelector('[name=salario_base]').value) || 0;
+    const compl = parseFloat(document.querySelector('[name=complemento]').value) || 0;
+    const bonus = parseFloat(document.querySelector('[name=bonus]').value) || 0;
+    const ret = parseFloat(document.querySelector('[name=retenciones]').value) || 0;
+    const ss = parseFloat(document.querySelector('[name=seguridad_social]').value) || 0;
+    const neto = (base + compl + bonus) - ret - ss;
+    document.getElementById('netoCalc').value = neto.toFixed(2) + ' EUR';
+}
+</script>
+{% endblock %}

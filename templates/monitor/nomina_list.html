@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Nominas{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-people"></i> Nominas <span style="font-size:1rem;color:var(--text-muted);">| Pendiente: <strong style="color:#fd7e14;">${{ total_pendiente|floatformat:0 }}</strong> | Pagado: <strong style="color:#28a745;">${{ total_pagado|floatformat:0 }}</strong></span></h2>
+    <a href="{% url 'monitor:nomina_create' %}" class="btn btn-accent"><i class="bi bi-plus-circle"></i> Nueva Nomina</a>
+</div>
+<div class="card glass-card border-0">
+    <div class="card-body">
+        <table class="table table-dark table-hover mb-0">
+            <thead><tr><th>Empleado</th><th>Periodo</th><th>Base</th><th>Compl.</th><th>Bonus</th><th>Retenc.</th><th>S.Social</th><th>NETO</th><th>Estado</th><th>Fecha Pago</th><th>Acciones</th></tr></thead>
+            <tbody>
+            {% for n in nominas %}
+            <tr>
+                <td><strong>{{ n.empleado.username }}</strong></td>
+                <td>{{ n.periodo }}</td>
+                <td>${{ n.salario_base }}</td>
+                <td>${{ n.complemento }}</td>
+                <td style="color:#28a745;">${{ n.bonus }}</td>
+                <td style="color:var(--accent);">-${{ n.retenciones }}</td>
+                <td style="color:var(--accent);">-${{ n.seguridad_social }}</td>
+                <td style="color:var(--gold);font-weight:700;">${{ n.neto }}</td>
+                <td><span class="badge" style="background:{% if n.estado == 'pagada' %}#28a745{% elif n.estado == 'pendiente' %}#ffc107{% else %}#6c757d{% endif %};">{{ n.get_estado_display }}</span></td>
+                <td>{{ n.fecha_pago|date:"d/m/Y" }}</td>
+                <td>{% if n.estado != 'pagada' %}<a href="{% url 'monitor:nomina_estado' pk=n.pk %}?estado=pagada" class="btn btn-sm btn-outline-success"><i class="bi bi-check-circle"></i></a>{% endif %}</td>
+            </tr>
+            {% empty %}<tr><td colspan="11" class="text-center" style="color:var(--text-muted);">No hay nominas</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<a href="{% url 'monitor:panel_financiero' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Panel Financiero</a>
+{% endblock %}

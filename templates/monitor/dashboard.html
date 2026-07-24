@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Dashboard - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
+                <p>Vista general de tus edificios patrimoniales</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'monitor:edificio_create' %}" class="btn btn-accent btn-lg">
+                    <i class="bi bi-plus-lg me-2"></i>Nuevo Edificio
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container fade-in">
+    {% include 'monitor/widget_islamico.html' %}
+
+    <div class="row g-3 mb-4 mt-4">
+        <div class="col-md-3 col-6">
+            <div class="stat-card" style="border-color: var(--accent2)">
+                <div class="stat-icon" style="background:rgba(15,52,96,0.1);color:var(--accent2)">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div class="stat-number" style="color:var(--accent2)">{{ stats.total_edificios }}</div>
+                <div class="stat-label">Edificios</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card" style="border-color: var(--accent)">
+                <div class="stat-icon" style="background:rgba(233,69,96,0.1);color:var(--accent)">
+                    <i class="bi bi-hdd-network"></i>
+                </div>
+                <div class="stat-number" style="color:var(--accent)">{{ stats.total_sensores }}</div>
+                <div class="stat-label">Sensores Activos</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card" style="border-color: var(--warning)">
+                <div class="stat-icon" style="background:rgba(243,156,18,0.1);color:var(--warning)">
+                    <i class="bi bi-bell"></i>
+                </div>
+                <div class="stat-number" style="color:var(--warning)">{{ stats.total_alertas }}</div>
+                <div class="stat-label">Alertas Activas</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card" style="border-color: var(--success)">
+                <div class="stat-icon" style="background:rgba(46,204,113,0.1);color:var(--success)">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div class="stat-number" style="color:var(--success)">{{ stats.lecturas_hoy }}</div>
+                <div class="stat-label">Lecturas Hoy</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-2 col-4">
+            <a href="{% url 'monitor:mapa_global' %}" class="text-decoration-none">
+                <div class="card-custom text-center py-3 h-100">
+                    <i class="bi bi-globe-americas fs-2" style="color:var(--accent2)"></i>
+                    <div class="fw-semibold mt-2" style="font-size:0.85rem;">Mapa</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-2 col-4">
+            <a href="{% url 'monitor:comparativa' %}" class="text-decoration-none">
+                <div class="card-custom text-center py-3 h-100">
+                    <i class="bi bi-bar-chart-line fs-2" style="color:var(--accent)"></i>
+                    <div class="fw-semibold mt-2" style="font-size:0.85rem;">Comparar</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-2 col-4">
+            <a href="{% url 'monitor:dashboard_tiempo_real' %}" class="text-decoration-none">
+                <div class="card-custom text-center py-3 h-100">
+                    <i class="bi bi-broadcast fs-2" style="color:var(--success)"></i>
+                    <div class="fw-semibold mt-2" style="font-size:0.85rem;">Tiempo Real</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-2 col-4">
+            <a href="{% url 'monitor:calendario' %}" class="text-decoration-none">
+                <div class="card-custom text-center py-3 h-100">
+                    <i class="bi bi-calendar3 fs-2" style="color:var(--warning)"></i>
+                    <div class="fw-semibold mt-2" style="font-size:0.85rem;">Calendario</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-2 col-4">
+            <a href="{% url 'monitor:gamificacion' %}" class="text-decoration-none">
+                <div class="card-custom text-center py-3 h-100">
+                    <i class="bi bi-trophy fs-2" style="color:var(--gold)"></i>
+                    <div class="fw-semibold mt-2" style="font-size:0.85rem;">Logros</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-2 col-4">
+            <a href="{% url 'monitor:equipo_list' %}" class="text-decoration-none">
+                <div class="card-custom text-center py-3 h-100">
+                    <i class="bi bi-people fs-2" style="color:#9b59b6"></i>
+                    <div class="fw-semibold mt-2" style="font-size:0.85rem;">Equipos</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card-custom">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-thermometer-half me-2" style="color:var(--accent)"></i>Temperatura - Últimas 24h</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="tempChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card-custom">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-bell me-2" style="color:var(--warning)"></i>Alertas Recientes</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if alertas_activas %}
+                    <div class="list-group list-group-flush">
+                        {% for alerta in alertas_activas %}
+                        <div class="list-group-item d-flex align-items-start py-3">
+                            <div class="me-3">
+                                <span class="badge rounded-pill {% if alerta.severidad == 'critical' %}bg-danger{% elif alerta.severidad == 'warning' %}bg-warning text-dark{% else %}bg-info{% endif %}">
+                                    <i class="bi bi-{% if alerta.severidad == 'critical' %}exclamation-octagon{% elif alerta.severidad == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+                                </span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold" style="font-size:0.9rem">{{ alerta.sensor.nombre }}</div>
+                                <small class="text-muted">{{ alerta.mensaje|truncatewords:12 }}</small>
+                                <div><small class="text-muted">{{ alerta.fecha_creacion|timesince }} atrás</small></div>
+                            </div>
+                            <a href="{% url 'monitor:alerta_resolver' pk=alerta.pk %}" class="btn btn-sm btn-outline-accent">
+                                Resolver
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-shield-check" style="color:var(--success)"></i>
+                        <h6 class="text-muted">Sin alertas activas</h6>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card-custom">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-building me-2" style="color:var(--accent2)"></i>Mis Edificios</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if edificios %}
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Edificio</th>
+                                    <th>Ciudad</th>
+                                    <th>Categoría</th>
+                                    <th>Estado</th>
+                                    <th>Sensores</th>
+                                    <th>Salud</th>
+                                    <th>Alertas</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for edificio in edificios %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if edificio.imagen_principal %}
+                                            <img src="{{ edificio.imagen_principal.url }}" class="rounded me-3" style="width:40px;height:40px;object-fit:cover;">
+                                            {% else %}
+                                            <div class="rounded me-3 d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:var(--gradient-hero);color:white">
+                                                <i class="bi bi-building"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-semibold">{{ edificio.nombre }}</div>
+                                                {% if edificio.anno_construccion %}<small class="text-muted">Siglo {{ edificio.anno_construccion|stringformat:"d" }}</small>{% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ edificio.ciudad }}</td>
+                                    <td><span class="text-muted">{{ edificio.get_categoria_display }}</span></td>
+                                    <td><span class="badge-heritage badge-{{ edificio.estado_general }}">{{ edificio.get_estado_general_display }}</span></td>
+                                    <td class="fw-semibold">{{ edificio.num_sensores }}</td>
+                                    <td style="width:120px">
+                                        {% widthratio edificio.salud_score 1 1 as score %}
+                                        <div class="progress-heritage">
+                                            <div class="bar" style="width:{{ edificio.salud_score }}%;background:{% if edificio.salud_score >= 80 %}var(--success){% elif edificio.salud_score >= 60 %}var(--warning){% else %}var(--danger){% endif %}"></div>
+                                        </div>
+                                        <small class="text-muted">{{ edificio.salud_score }}/100</small>
+                                    </td>
+                                    <td>
+                                        {% if edificio.alertas_activas > 0 %}
+                                        <span class="badge bg-danger rounded-pill">{{ edificio.alertas_activas }}</span>
+                                        {% else %}
+                                        <span class="badge bg-success rounded-pill">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-sm btn-outline-accent">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-building"></i>
+                        <h4>No hay edificios registrados</h4>
+                        <p class="text-muted">Comienza añadiendo tu primer edificio patrimonial</p>
+                        <a href="{% url 'monitor:edificio_create' %}" class="btn btn-accent">
+                            <i class="bi bi-plus-lg me-2"></i>Añadir Edificio
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const datosGrafica = {{ datos_grafica|safe }};
+const ctx = document.getElementById('tempChart').getContext('2d');
+const colors = ['#e94560', '#0f3460', '#d4a853', '#2ecc71', '#9b59b6', '#e67e22'];
+const datasets = datosGrafica.map((d, i) => ({
+    label: d.nombre,
+    data: d.datos.map(p => ({x: p.x, y: p.y})),
+    borderColor: colors[i % colors.length],
+    backgroundColor: colors[i % colors.length] + '20',
+    fill: true,
+    tension: 0.4,
+    pointRadius: 0,
+    borderWidth: 2,
+}));
+new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 20 } } },
+        scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: '#f0f0f0' }, title: { display: true, text: '°C' } }
+        },
+        interaction: { intersect: false, mode: 'index' },
+    }
+});
+</script>
+{% endblock %}

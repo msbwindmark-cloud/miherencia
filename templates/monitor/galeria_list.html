@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Galeria Before/After - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-images"></i> Galeria Before/After</h1>
+                <p>Compara la evolucion visual de tus edificios patrimoniales</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-accent">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4>Fotos de Edificios</h4>
+        <a href="{% url 'monitor:edificio_list' %}" class="btn btn-accent">
+            <i class="bi bi-plus-lg me-1"></i>Nueva Comparacion
+        </a>
+    </div>
+    <div class="row g-4">
+        {% for galeria in galerias %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card-custom h-100">
+                <div class="card-header fw-bold" style="background:var(--accent);color:#fff;">
+                    <i class="bi bi-building me-1"></i> {{ galeria.edificio.nombre }}
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block mb-1">ANTES</small>
+                            <div style="position:relative;overflow:hidden;border-radius:0.5rem;height:150px;background:#111;">
+                                {% if galeria.imagen_antes %}
+                                <img src="{{ galeria.imagen_antes.url }}" alt="Antes" class="w-100 h-100" style="object-fit:cover;">
+                                {% else %}
+                                <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                                    <i class="bi bi-image fs-3"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block mb-1">DESPUES</small>
+                            <div style="position:relative;overflow:hidden;border-radius:0.5rem;height:150px;background:#111;">
+                                {% if galeria.imagen_despues %}
+                                <img src="{{ galeria.imagen_despues.url }}" alt="Despues" class="w-100 h-100" style="object-fit:cover;">
+                                {% else %}
+                                <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                                    <i class="bi bi-image fs-3"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if galeria.slider %}
+                    <div class="comparison-slider position-relative rounded" style="height:200px;overflow:hidden;background:#111;" data-before="{{ galeria.imagen_antes.url }}" data-after="{{ galeria.imagen_despues.url }}">
+                        <img src="{{ galeria.imagen_despues.url }}" class="w-100 h-100" style="object-fit:cover;" alt="Despues">
+                        <div class="slider-overlay position-absolute top-0 start-0 h-100" style="width:50%;overflow:hidden;">
+                            <img src="{{ galeria.imagen_antes.url }}" class="w-100 h-100" style="object-fit:cover;min-width:200%;" alt="Antes">
+                        </div>
+                        <div class="slider-handle position-absolute top-0 h-100" style="left:50%;width:3px;background:var(--accent);cursor:ew-resize;z-index:10;"></div>
+                    </div>
+                    {% endif %}
+                    <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>{{ galeria.fecha_creacion|date:"d/m/Y" }}</small>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card-custom text-center py-5">
+                <i class="bi bi-images fs-1 mb-3" style="color:var(--accent);"></i>
+                <h5>No hay comparaciones aun</h5>
+                <p class="text-muted">Sube fotos antes y despues de tus edificios</p>
+                <a href="{% url 'monitor:galeria_create' %}" class="btn btn-accent">
+                    <i class="bi bi-plus-lg me-1"></i>Crear Primera Comparacion
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

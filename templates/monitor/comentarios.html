@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Comentarios - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<h2 style="color:var(--gold);"><i class="bi bi-chat-dots"></i> Comentarios - {{ edificio.nombre }}</h2>
+<div class="card glass-card border-0 mb-4">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <textarea name="texto" class="form-control" rows="3" placeholder="Escribe un comentario..." required></textarea>
+            <button type="submit" class="btn btn-accent mt-2"><i class="bi bi-send"></i> Publicar</button>
+        </form>
+    </div>
+</div>
+{% for c in comentarios %}
+<div class="card glass-card border-0 mb-2" style="{% if c.padre %}margin-left:2rem;border-left:2px solid var(--gold);{% endif %}">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex justify-content-between">
+            <strong style="color:var(--accent);">{{ c.autor.username }}</strong>
+            <small style="color:var(--text-muted);">{{ c.fecha|date:"d/m/Y H:i" }}</small>
+        </div>
+        <p class="mb-1">{{ c.texto }}</p>
+        <form method="post" class="d-inline">{% csrf_token %}
+            <input type="hidden" name="padre_id" value="{{ c.pk }}">
+            <input name="texto" class="form-control form-control-sm d-inline" style="width:70%;" placeholder="Responder...">
+            <button type="submit" class="btn btn-sm btn-outline-accent">Responder</button>
+        </form>
+    </div>
+</div>
+{% empty %}
+<div class="text-center py-4"><p style="color:var(--text-muted);">No hay comentarios aun. Sé el primero!</p></div>
+{% endfor %}
+<a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Edificio</a>
+{% endblock %}

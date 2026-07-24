@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Documentos - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-folder2-open"></i> Documentos - {{ edificio.nombre }}</h2>
+    <a href="{% url 'monitor:edificio_detail' edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+<div class="glass-card p-4 mb-4">
+    <h5>Subir Documento</h5>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-3"><input name="titulo" class="form-control form-control-dark" placeholder="Titulo del documento" required></div>
+            <div class="col-md-2">
+                <select name="categoria" class="form-select form-select-dark">
+                    <option value="plano">Plano</option>
+                    <option value="permiso">Permiso</option>
+                    <option value="contrato">Contrato</option>
+                    <option value="informe_tecnico">Informe Tecnico</option>
+                    <option value="historico">Documento Historico</option>
+                    <option value="fotografia">Fotografia</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+            <div class="col-md-3"><input name="archivo" type="file" class="form-control form-control-dark" required></div>
+            <div class="col-md-2"><input name="descripcion" class="form-control form-control-dark" placeholder="Descripcion"></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-accent w-100"><i class="bi bi-upload"></i> Subir</button></div>
+        </div>
+    </form>
+</div>
+<div class="row g-3">
+    {% for doc in documentos %}
+    <div class="col-md-4">
+        <div class="glass-card p-3 h-100">
+            <div class="d-flex align-items-start mb-2">
+                <i class="bi bi-file-earmark-text fs-2 me-2" style="color:var(--gold);"></i>
+                <div>
+                    <h6 class="mb-0">{{ doc.titulo }}</h6>
+                    <small class="text-muted">{{ doc.get_categoria_display }} | {{ doc.tamaño_kb|floatformat:0 }} KB</small>
+                </div>
+            </div>
+            <p class="small text-muted">{{ doc.descripcion|truncatewords:20 }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">{{ doc.fecha_subida|date:"d/m/Y" }}</small>
+                <small class="text-muted">por {{ doc.subido_por.username }}</small>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12"><div class="glass-card p-4 text-center"><i class="bi bi-folder-x fs-1 text-muted"></i><p class="text-muted">No hay documentos</p></div></div>
+    {% endfor %}
+</div>
+{% endblock %}

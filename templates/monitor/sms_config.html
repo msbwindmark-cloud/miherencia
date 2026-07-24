@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Configuración SMS/WhatsApp - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1><i class="bi bi-phone"></i> Configuración SMS/WhatsApp</h1>
+        <p>Configura alertas por SMS usando Twilio</p>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="alert alert-info alert-custom mb-4">
+                <h6 class="fw-bold"><i class="bi bi-info-circle me-2"></i>¿Cómo funciona?</h6>
+                <p class="mb-0">Usa <a href="https://www.twilio.com" target="_blank">Twilio</a> para enviar SMS y WhatsApp. Necesitas una cuenta de Twilio con un número verificado.</p>
+            </div>
+            <div class="card-custom">
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <h6 class="fw-bold mb-3" style="color:var(--accent2)"><i class="bi bi-key me-2"></i>Credenciales Twilio</h6>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Account SID</label>
+                                <input type="text" name="account_sid" class="form-control" value="{{ config.account_sid }}" placeholder="ACxxxxxxxxxx">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Auth Token</label>
+                                <input type="password" name="auth_token" class="form-control" value="{{ config.auth_token }}" placeholder="Tu auth token">
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold mb-3" style="color:var(--accent2)"><i class="bi bi-telephone me-2"></i>Números</h6>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Número Twilio (origen)</label>
+                                <input type="text" name="numero_origen" class="form-control" value="{{ config.numero_origen }}" placeholder="+34612345678">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Números destino (uno por línea)</label>
+                                <textarea name="numeros_destino" class="form-control" rows="3" placeholder="+34611111111
++34622222222">{{ config.numeros_destino }}</textarea>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold mb-3" style="color:var(--accent2)"><i class="bi bi-gear me-2"></i>Opciones</h6>
+                        <div class="mb-4">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" name="activo" id="activo" {% if config.activo %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="activo">Activar envío SMS/WhatsApp</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="alertas_criticas" id="alertas_criticas" {% if config.alertas_criticas %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold" for="alertas_criticas">Enviar solo alertas críticas</label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-2"></i>Volver</a>
+                            <button type="submit" class="btn btn-accent btn-lg"><i class="bi bi-check-lg me-2"></i>Guardar Configuración</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

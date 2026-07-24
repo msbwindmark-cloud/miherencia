@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Calendario - SmartHeritage{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<style>
+    .fc-popover { max-height: 300px; overflow-y: auto !important; z-index: 9999 !important; }
+    .fc-popover-body { max-height: 250px; overflow-y: auto !important; }
+    .fc-more-popover { max-height: 300px; overflow-y: auto !important; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1><i class="bi bi-calendar3"></i> Calendario</h1>
+        <p>Vista visual de mantenimientos, alertas y eventos</p>
+        <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary mt-2"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="card-custom">
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text" style="background:rgba(255,255,255,0.05); border-color:rgba(255,255,255,0.1); color:var(--accent);"><i class="bi bi-search"></i></span>
+                        <input type="text" id="buscadorCalendario" class="form-control" placeholder="Buscar evento..." oninput="filtrarCalendario(this.value)">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="filtroTipo" class="form-select" onchange="filtrarCalendario(document.getElementById('buscadorCalendario').value)">
+                        <option value="">Todos los tipos</option>
+                        <option value="mantenimiento">Mantenimientos</option>
+                        <option value="alerta">Alertas</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge" style="background:rgba(233,69,96,0.2); color:var(--accent); padding:8px 14px; font-size:0.85em;" id="contadorEventos">{{ eventos|length }} eventos</span>
+                </div>
+            </div>
+            <div id="calendar"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const eventos = {{ eventos|safe }};
+    const eventosOriginales = [...eventos];
+    let calendar;
+    const urlMantenimientos = "{% url 'monitor:mantenimiento_list' %}";
+    const urlAlertas = "{% url 'monitor:alerta_list' %}";
+    const calendarEl = document.getElementById('calendar');
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'es',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+        events: eventos,
+        dayMaxEvents: 3,
+        dayMaxEventRows: 3,
+        moreLinkText: function(n) {
+            return '+' + n + ' mas';
+        },
+        eventClick: function(info) {
+            const tipo = info.event.extendedProps.tipo;
+            if (tipo === 'mantenimiento') window.location.href = urlMantenimientos;
+            else if (tipo === 'alerta') window.location.href = urlAlertas;
+        },
+        height: 'auto',
+    });
+    calendar.render();
+});
+
+function filtrarCalendario(busqueda) {
+    const tipo = document.getElementById('filtroTipo').value;
+    const busq = busqueda.toLowerCase();
+    let filtrados = eventosOriginales.filter(e => {
+        const matchBusqueda = !busq || (e.title && e.title.toLowerCase().includes(busq));
+        const matchTipo = !tipo || (e.extendedProps && e.extendedProps.tipo === tipo);
+        return matchBusqueda && matchTipo;
+    });
+    document.getElementById('contadorEventos').textContent = filtrados.length + ' eventos';
+    calendar.removeAllEvents();
+    calendar.addEventSource(filtrados);
+}
+</script>
+{% endblock %}

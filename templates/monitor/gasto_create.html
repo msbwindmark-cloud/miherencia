@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Nuevo Gasto - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2 style="color:var(--accent);"><i class="bi bi-dash-circle"></i> Nuevo Gasto</h2>
+        <p style="color:var(--text-muted);">Edificio: <strong>{{ edificio.nombre }}</strong></p>
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-8 mb-3"><label class="form-label">Concepto</label><input name="concepto" class="form-control" required placeholder="Ej: Reparacion fachada"></div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Categoria</label>
+                            <select name="categoria" class="form-select"><option value="">Sin categoria</option>{% for c in categorias %}<option value="{{ c.pk }}">{{ c.nombre }}</option>{% endfor %}</select>
+                        </div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Monto (EUR)</label><input name="monto" type="number" step="0.01" class="form-control" required></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Fecha</label><input name="fecha" type="date" class="form-control" value="{{ today }}"></div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Forma de Pago</label>
+                            <select name="forma_pago" class="form-select"><option value="transferencia">Transferencia</option><option value="tarjeta">Tarjeta</option><option value="efectivo">Efectivo</option><option value="domiciliado">Domiciliado</option><option value="cheque">Cheque</option></select>
+                        </div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Proveedor</label><input name="proveedor" class="form-control" placeholder="Nombre proveedor"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">NIF Proveedor</label><input name="proveedor_nif" class="form-control"></div>
+                        <div class="col-12 mb-3"><label class="form-label">Descripcion</label><textarea name="descripcion" class="form-control" rows="2"></textarea></div>
+                        <div class="col-6 mb-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="pagado" id="pag"><label class="form-check-label" for="pag">Ya pagado</label></div></div>
+                        <div class="col-6 mb-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="deducible" id="ded"><label class="form-check-label" for="ded">Deducible IRPF</label></div></div>
+                        <div class="col-12 mb-3"><label class="form-label">Notas</label><textarea name="notas" class="form-control" rows="2"></textarea></div>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100 mt-3"><i class="bi bi-check-circle"></i> Guardar Gasto</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

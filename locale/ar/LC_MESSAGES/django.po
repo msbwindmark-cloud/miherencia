@@ -1,0 +1,207 @@
+# SmartHeritage - Arabic translations
+msgid ""
+msgstr ""
+"Project-Id-Version: SmartHeritage 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-24 10:00+0000\n"
+"PO-Revision-Date: 2026-07-24 10:00+0000\n"
+"Last-Translator: SmartHeritage Team\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
+"Direction: rtl\n"
+
+msgid "Dashboard"
+msgstr "لوحة القيادة"
+
+msgid "Edificios"
+msgstr "المباني"
+
+msgid "Sensores"
+msgstr "المستشعرات"
+
+msgid "Lecturas"
+msgstr "القراءات"
+
+msgid "Alertas"
+msgstr "التنبيهات"
+
+msgid "Mantenimiento"
+msgstr "الصيانة"
+
+msgid "Informes"
+msgstr "التقارير"
+
+msgid "Configuracion"
+msgstr "الإعدادات"
+
+msgid "Cerrar sesion"
+msgstr "تسجيل الخروج"
+
+msgid "Iniciar sesion"
+msgstr "تسجيل الدخول"
+
+msgid "Buscar"
+msgstr "بحث"
+
+msgid "Guardar"
+msgstr "حفظ"
+
+msgid "Cancelar"
+msgstr "إلغاء"
+
+msgid "Eliminar"
+msgstr "حذف"
+
+msgid "Editar"
+msgstr "تعديل"
+
+msgid "Crear"
+msgstr "إنشاء"
+
+msgid "Volver"
+msgstr "رجوع"
+
+msgid "Nombre"
+msgstr "الاسم"
+
+msgid "Direccion"
+msgstr "العنوان"
+
+msgid "Ciudad"
+msgstr "المدينة"
+
+msgid "Estado"
+msgstr "الحالة"
+
+msgid "Fecha"
+msgstr "التاريخ"
+
+msgid "Descripcion"
+msgstr "الوصف"
+
+msgid "Tiempo real"
+msgstr "في الوقت الفعلي"
+
+msgid "Mapa global"
+msgstr "الخريطة العالمية"
+
+msgid "Comparativa"
+msgstr "المقارنة"
+
+msgid "Calendario"
+msgstr "التقويم"
+
+msgid "Notificaciones"
+msgstr "الإشعارات"
+
+msgid "Reportes automaticos"
+msgstr "التقارير التلقائية"
+
+msgid "Gestion de usuarios"
+msgstr "إدارة المستخدمين"
+
+msgid "Auditoria"
+msgstr "التدقيق"
+
+msgid "Exportar"
+msgstr "تصدير"
+
+msgid "Importar"
+msgstr "استيراد"
+
+msgid "Backup"
+msgstr "النسخ الاحتياطي"
+
+msgid "Ranking global"
+msgstr "التصنيف العام"
+
+msgid "Energia"
+msgstr "الطاقة"
+
+msgid "Seguros"
+msgstr "التأمين"
+
+msgid "Legal"
+msgstr "القانوني"
+
+msgid "Blockchain"
+msgstr "سلسلة الكتل"
+
+msgid "Tours virtuales"
+msgstr "جولات افتراضية"
+
+msgid "Eventos"
+msgstr "الأحداث"
+
+msgid "Tienda"
+msgstr "المتجر"
+
+msgid "Chat IA"
+msgstr "محادثة الذكاء الاصطناعي"
+
+msgid "Galeria"
+msgstr "المعرض"
+
+msgid "Comentarios"
+msgstr "التعليقات"
+
+msgid "Gestion de tareas"
+msgstr "إدارة المهام"
+
+msgid "Panel financiero"
+msgstr "اللوحة المالية"
+
+msgid "Inventario"
+msgstr "المخزون"
+
+msgid "Contratos"
+msgstr "العقود"
+
+msgid "Bitacora"
+msgstr "سجل العمليات"
+
+msgid "Herramientas"
+msgstr "الأدوات"
+
+msgid "Inspecciones"
+msgstr "الفحوصات"
+
+msgid "Documentos"
+msgstr "الوثائق"
+
+msgid "Voluntarios"
+msgstr "المتطوعون"
+
+msgid "Donaciones"
+msgstr "التبرعات"
+
+msgid "Portal educativo"
+msgstr "البوابة التعليمية"
+
+msgid "Reportes ciudadanos"
+msgstr "بلاغات المواطنين"
+
+msgid "Widget islamico"
+msgstr "الأداة الإسلامية"
+
+msgid "Visor 3D"
+msgstr "عارض ثلاثي الأبعاد"
+
+msgid "Huella CO2"
+msgstr "بصمة ثاني أكسيد الكربون"
+
+msgid "Recomendaciones IA"
+msgstr "توصيات الذكاء الاصطناعي"
+
+msgid "Analisis predictivo"
+msgstr "التحليل التنبؤي"
+
+msgid "Anomalias"
+msgstr "الشذوذات"
+
+msgid "RBAC"
+msgstr "التحكم في الوصول"

@@ -1,0 +1,145 @@
+{% load static %}
+<style>
+.islamic-widget {
+    background: linear-gradient(135deg, #0a1628 0%, #1a1a4e 40%, #0d2137 100%);
+    border-radius: 16px;
+    padding: 20px 24px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(212, 168, 83, 0.25);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(212,168,83,0.15);
+}
+.islamic-widget::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(212,168,83,0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+.islamic-widget .star-pattern {
+    position: absolute;
+    top: 10px;
+    right: 16px;
+    opacity: 0.08;
+    font-size: 80px;
+    pointer-events: none;
+}
+.iw-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+.iw-datetime { flex: 1; min-width: 200px; }
+.iw-hijri-date { font-size: 1.5rem; font-weight: 700; color: var(--gold, #d4a853); letter-spacing: 0.5px; }
+.iw-gregorian { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-top: 2px; }
+.iw-time { font-size: 2rem; font-weight: 700; font-family: 'Courier New', monospace; color: #fff; margin-top: 4px; }
+.iw-weather { text-align: right; min-width: 140px; }
+.iw-temp { font-size: 2.4rem; font-weight: 700; color: #fff; line-height: 1; }
+.iw-temp-desc { font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-top: 2px; }
+.iw-city { font-size: 0.85rem; color: var(--gold, #d4a853); margin-top: 2px; }
+.iw-weather-icon { font-size: 2rem; }
+.iw-weather-detail { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
+
+.iw-prayer-section { margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px; }
+.iw-prayer-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; color: var(--gold, #d4a853); margin-bottom: 10px; font-weight: 600; }
+.iw-prayer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap: 6px; }
+.iw-prayer-item {
+    text-align: center;
+    padding: 8px 4px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.3s ease;
+}
+.iw-prayer-item:hover { background: rgba(212,168,83,0.12); border-color: rgba(212,168,83,0.3); transform: translateY(-2px); }
+.iw-prayer-item.active-prayer {
+    background: rgba(212,168,83,0.2);
+    border-color: var(--gold, #d4a853);
+    box-shadow: 0 0 12px rgba(212,168,83,0.2);
+}
+.iw-prayer-name { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.6); font-weight: 600; }
+.iw-prayer-time { font-size: 1rem; font-weight: 700; color: #fff; margin-top: 2px; font-family: 'Courier New', monospace; }
+.iw-prayer-item.active-prayer .iw-prayer-name { color: var(--gold, #d4a853); }
+.iw-prayer-item.active-prayer .iw-prayer-time { color: var(--gold, #d4a853); }
+
+@media (max-width: 768px) {
+    .iw-top { flex-direction: column; align-items: center; text-align: center; }
+    .iw-weather { text-align: center; }
+    .iw-prayer-grid { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+
+<div class="islamic-widget">
+    <div class="star-pattern">☪</div>
+    <div class="iw-top">
+        <div class="iw-datetime">
+            {% if hijri.completa %}
+            <div class="iw-hijri-date">☪ {{ hijri.completa }}</div>
+            {% endif %}
+            <div class="iw-gregorian">{{ fecha_completa.completa }}</div>
+            <div class="iw-time" id="live-clock">{{ fecha_completa.hora }}</div>
+        </div>
+        {% if weather %}
+        <div class="iw-weather">
+            <div class="iw-weather-icon">
+                {% if weather.icono == '01d' %}☀️{% elif weather.icono == '01n' %}🌙{% elif weather.icono == '02d' %}⛅{% elif weather.icono == '02n' %}☁️{% elif weather.icono == '03d' or weather.icono == '03n' %}☁️{% elif weather.icono == '04d' or weather.icono == '04n' %}☁️{% elif weather.icono == '09d' or weather.icono == '09n' %}🌧️{% elif weather.icono == '10d' or weather.icono == '10n' %}🌦️{% elif weather.icono == '11d' or weather.icono == '11n' %}⛈️{% elif weather.icono == '13d' or weather.icono == '13n' %}❄️{% elif weather.icono == '50d' or weather.icono == '50n' %}🌫️{% else %}🌤️{% endif %}
+            </div>
+            <div class="iw-temp">{{ weather.temperatura }}°C</div>
+            <div class="iw-temp-desc">{{ weather.descripcion }} | {{ weather.humedad }}% humedad</div>
+            <div class="iw-city"><i class="bi bi-geo-alt-fill"></i> {{ weather.ciudad }}, {{ weather.pais }}</div>
+            <div class="iw-weather-detail">Viento: {{ weather.viento }} km/h</div>
+        </div>
+        {% else %}
+        <div class="iw-weather">
+            <div class="iw-city"><i class="bi bi-geo-alt-fill"></i> {{ weather_city }}</div>
+            <div class="iw-weather-detail" style="margin-top:6px;">
+                <small style="color:rgba(255,255,255,0.4);">API del clima no configurada</small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="iw-prayer-section">
+        <div class="iw-prayer-title"><i class="bi bi-clock-history me-1"></i> Horarios de Salat — {{ weather_city }}</div>
+        <div class="iw-prayer-grid">
+            <div class="iw-prayer-item {% if prayer_times.next_prayer == 'Fajr' %}active-prayer{% endif %}">
+                <div class="iw-prayer-name">Fajr</div>
+                <div class="iw-prayer-time">{{ prayer_times.fajr }}</div>
+            </div>
+            <div class="iw-prayer-item {% if prayer_times.next_prayer == 'Sunrise' %}active-prayer{% endif %}">
+                <div class="iw-prayer-name">Shuruq</div>
+                <div class="iw-prayer-time">{{ prayer_times.sunrise }}</div>
+            </div>
+            <div class="iw-prayer-item {% if prayer_times.next_prayer == 'Dhuhr' %}active-prayer{% endif %}">
+                <div class="iw-prayer-name">Dhuhr</div>
+                <div class="iw-prayer-time">{{ prayer_times.dhuhr }}</div>
+            </div>
+            <div class="iw-prayer-item {% if prayer_times.next_prayer == 'Asr' %}active-prayer{% endif %}">
+                <div class="iw-prayer-name">Asr</div>
+                <div class="iw-prayer-time">{{ prayer_times.asr }}</div>
+            </div>
+            <div class="iw-prayer-item {% if prayer_times.next_prayer == 'Maghrib' %}active-prayer{% endif %}">
+                <div class="iw-prayer-name">Maghrib</div>
+                <div class="iw-prayer-time">{{ prayer_times.maghrib }}</div>
+            </div>
+            <div class="iw-prayer-item {% if prayer_times.next_prayer == 'Isha' %}active-prayer{% endif %}">
+                <div class="iw-prayer-name">Isha</div>
+                <div class="iw-prayer-time">{{ prayer_times.isha }}</div>
+            </div>
+        </div>
+        {% if prayer_times.method %}
+        <div style="margin-top:8px;font-size:0.65rem;color:rgba(255,255,255,0.3);text-align:right;">Método: {{ prayer_times.method }}</div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function updateClock() {
+    const now = new Date();
+    const el = document.getElementById('live-clock');
+    if (el) {
+        el.textContent = now.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    }
+}
+setInterval(updateClock, 1000);
+</script>

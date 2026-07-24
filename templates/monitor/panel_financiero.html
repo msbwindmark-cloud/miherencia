@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Panel Financiero{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-cash-stack"></i> Panel Financiero</h2>
+    <div class="d-flex gap-2">
+        <a href="{% url 'monitor:ingreso_list' %}" class="btn btn-sm btn-success"><i class="bi bi-plus-circle"></i> Ingresos</a>
+        <a href="{% url 'monitor:gasto_list' %}" class="btn btn-sm btn-danger"><i class="bi bi-dash-circle"></i> Gastos</a>
+        <a href="{% url 'monitor:factura_list' %}" class="btn btn-sm btn-accent"><i class="bi bi-receipt"></i> Facturas</a>
+        <a href="{% url 'monitor:nomina_list' %}" class="btn btn-sm btn-outline-accent"><i class="bi bi-people"></i> Nominas</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card glass-card border-0 text-center p-3">
+            <div style="font-size:1.8rem;color:#28a745;font-weight:700;">${{ total_ingresos|floatformat:0 }}</div>
+            <small style="color:var(--text-muted);">Ingresos del Mes</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card glass-card border-0 text-center p-3">
+            <div style="font-size:1.8rem;color:var(--accent);font-weight:700;">${{ total_gastos|floatformat:0 }}</div>
+            <small style="color:var(--text-muted);">Gastos del Mes</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card glass-card border-0 text-center p-3">
+            <div style="font-size:1.8rem;color:{% if balance > 0 %}#28a745{% else %}var(--accent){% endif %};font-weight:700;">${{ balance|floatformat:0 }}</div>
+            <small style="color:var(--text-muted);">Balance</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card glass-card border-0 text-center p-3">
+            <div style="font-size:1.8rem;color:#fd7e14;font-weight:700;">${{ total_facturas_pendientes|floatformat:0 }}</div>
+            <small style="color:var(--text-muted);">Facturas Pendientes</small>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card glass-card border-0 text-center p-2">
+            <div style="font-size:1.2rem;color:#28a745;font-weight:700;">${{ ingresos_hoy|floatformat:0 }}</div>
+            <small style="color:var(--text-muted);">Ingresos Hoy</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card glass-card border-0 text-center p-2">
+            <div style="font-size:1.2rem;color:var(--accent);font-weight:700;">${{ gastos_hoy|floatformat:0 }}</div>
+            <small style="color:var(--text-muted);">Gastos Hoy</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card glass-card border-0 text-center p-2">
+            <div style="font-size:1.2rem;color:#ffc107;font-weight:700;">${{ total_nominas_pendientes|floatformat:0 }}</div>
+            <small style="color:var(--text-muted);">Nominas Pendientes</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card glass-card border-0 text-center p-2">
+            <div style="font-size:1.2rem;color:var(--gold);font-weight:700;">{{ presupuestos_alerta|length }}</div>
+            <small style="color:var(--text-muted);">Presupuestos Alerta</small>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card glass-card border-0">
+            <div class="card-header" style="background:rgba(212,168,83,0.1);border:none;"><h6 style="color:var(--gold);" class="mb-0"><i class="bi bi-bar-chart"></i> Ingresos vs Gastos (12 meses)</h6></div>
+            <div class="card-body"><canvas id="chartIngresosGastos" height="100"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card glass-card border-0 h-100">
+            <div class="card-header" style="background:rgba(233,69,96,0.1);border:none;"><h6 style="color:var(--accent);" class="mb-0"><i class="bi bi-exclamation-triangle"></i> Alertas Presupuesto</h6></div>
+            <div class="card-body">
+                {% for p in presupuestos_alerta %}
+                <div class="mb-2 p-2" style="background:rgba(255,193,7,0.1);border-radius:8px;border-left:3px solid #ffc107;">
+                    <strong>{{ p.nombre }}</strong><br>
+                    <small>{{ p.monto_gastado|floatformat:0 }} / {{ p.monto_asignado|floatformat:0 }} EUR ({{ p.porcentaje_gastado|floatformat:0 }}%)</small>
+                    <div class="progress mt-1" style="height:4px;background:rgba(255,255,255,0.1);">
+                        <div class="progress-bar" style="width:{{ p.porcentaje_gastado }}%;background:{{ p.estado_color }};"></div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center" style="color:var(--text-muted);">Sin alertas</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card glass-card border-0">
+            <div class="card-header" style="background:rgba(212,168,83,0.1);border:none;"><h6 style="color:var(--gold);" class="mb-0"><i class="bi bi-receipt"></i> Ultimas Facturas</h6></div>
+            <div class="card-body">
+                {% for f in ultimas_facturas %}
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2" style="background:rgba(255,255,255,0.03);border-radius:8px;">
+                    <div><strong>{{ f.numero }}</strong><br><small style="color:var(--text-muted);">{{ f.cliente_proveedor }}</small></div>
+                    <div class="text-end"><strong style="color:var(--gold);">${{ f.total|floatformat:0 }}</strong><br><span class="badge" style="background:{% if f.estado == 'pagada' %}#28a745{% elif f.estado == 'vencida' %}var(--accent){% else %}#ffc107{% endif %};">{{ f.get_estado_display }}</span></div>
+                </div>
+                {% empty %}<p class="text-center" style="color:var(--text-muted);">Sin facturas</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card glass-card border-0">
+            <div class="card-header" style="background:rgba(233,69,96,0.1);border:none;"><h6 style="color:var(--accent);" class="mb-0"><i class="bi bi-dash-circle"></i> Ultimos Gastos</h6></div>
+            <div class="card-body">
+                {% for g in ultimos_gastos %}
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2" style="background:rgba(255,255,255,0.03);border-radius:8px;">
+                    <div><strong>{{ g.concepto }}</strong><br><small style="color:var(--text-muted);">{{ g.proveedor|default:"-" }}</small></div>
+                    <div class="text-end"><strong style="color:var(--accent);">${{ g.monto|floatformat:0 }}</strong><br><small>{{ g.fecha|date:"d/m/Y" }}</small></div>
+                </div>
+                {% empty %}<p class="text-center" style="color:var(--text-muted);">Sin gastos</p>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('chartIngresosGastos').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: [{% for i in ingresos_mes %}'{{ i.mes }}',{% endfor %}],
+        datasets: [
+            { label: 'Ingresos', data: [{% for i in ingresos_mes %}{{ i.total }},{% endfor %}], backgroundColor: 'rgba(40,167,69,0.7)', borderColor: '#28a745', borderWidth: 1, borderRadius: 6 },
+            { label: 'Gastos', data: [{% for g in gastos_mes %}{{ g.total }},{% endfor %}], backgroundColor: 'rgba(233,69,96,0.7)', borderColor: '#e94560', borderWidth: 1, borderRadius: 6 }
+        ]
+    },
+    options: { responsive: true, plugins: { legend: { labels: { color: '#ccc' } } }, scales: { x: { ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,0.05)' } } } }
+});
+</script>
+<a href="{% url 'monitor:dashboard' %}" class="btn btn-sm btn-outline-secondary mt-4"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+{% endblock %}

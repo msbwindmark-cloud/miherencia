@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Fotos Inspeccion IA{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 style="color:var(--gold);"><i class="bi bi-camera"></i> Inspeccion con Fotos IA</h2>
+</div>
+<div class="row">
+    {% for f in fotos %}
+    <div class="col-md-4 col-lg-3 mb-3">
+        <div class="card glass-card border-0 h-100">
+            {% if f.imagen %}<img src="{{ f.imagen.url }}" class="card-img-top" style="height:150px;object-fit:cover;">{% endif %}
+            <div class="card-body">
+                <h6 style="color:var(--gold);">{{ f.titulo }}</h6>
+                <span class="badge" style="background:{% if f.resultado_ia == 'ok' %}#28a745{% elif f.resultado_ia == 'grietas' %}#fd7e14{% elif f.resultado_ia == 'humedad' %}#17a2b8{% elif f.resultado_ia == 'dano_estructural' %}var(--accent){% else %}#ffc107{% endif %};">{{ f.get_resultado_ia_display }}</span>
+                <span class="badge bg-secondary">{{ f.confianza_ia }}%</span>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ f.detalles_ia|truncatewords:15 }}</p>
+                <small style="color:var(--text-muted);">{{ f.edificio.nombre }} | {{ f.fecha|date:"d/m H:i" }}</small>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5"><i class="bi bi-camera" style="font-size:3rem;color:var(--text-muted);"></i><p class="mt-2" style="color:var(--text-muted);">Sube fotos de tus edificios y el analisis IA detectara problemas</p></div>
+    {% endfor %}
+</div>
+<a href="{% url 'monitor:edificio_list' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver</a>
+{% endblock %}

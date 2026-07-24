@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Edificios - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1><i class="bi bi-building"></i> Edificios Patrimoniales</h1>
+                <p>Gestiona y monitoriza tus edificios historicos</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary me-2"><i class="bi bi-arrow-left"></i> Volver</a>
+                <form method="get" class="d-inline-flex me-2">
+                    {{ busqueda.q }}
+                    <button type="submit" class="btn btn-outline-accent ms-2"><i class="bi bi-search"></i></button>
+                </form>
+                <a href="{% url 'monitor:edificio_create' %}" class="btn btn-accent btn-lg">
+                    <i class="bi bi-plus-lg me-2"></i>Nuevo
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container fade-in">
+    {% if edificios %}
+    <div class="row g-4">
+        {% for edificio in edificios %}
+        <div class="col-md-4">
+            <div class="card-custom h-100">
+                {% if edificio.imagen_principal %}
+                <img src="{{ edificio.imagen_principal.url }}" class="card-img-top" style="height:200px;object-fit:cover;" alt="{{ edificio.nombre }}">
+                {% else %}
+                <div class="card-img-top d-flex align-items-center justify-content-center" style="height:200px;background:var(--gradient-hero);">
+                    <i class="bi bi-building text-white" style="font-size:3rem;opacity:0.5"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title fw-bold mb-0">{{ edificio.nombre }}</h5>
+                        <span class="badge-heritage badge-{{ edificio.estado_general }}">{{ edificio.get_estado_general_display }}</span>
+                    </div>
+                    <p class="text-muted mb-2"><i class="bi bi-geo-alt me-1"></i>{{ edificio.ciudad }}, {{ edificio.provincia }}</p>
+                    <p class="text-muted small mb-3">{{ edificio.get_categoria_display }}</p>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small"><i class="bi bi-hdd-network me-1"></i>{{ edificio.num_sensores }} sensores</span>
+                        <span class="small"><i class="bi bi-bell me-1"></i>
+                            {% if edificio.alertas_activas > 0 %}
+                            <span class="text-danger fw-bold">{{ edificio.alertas_activas }} alertas</span>
+                            {% else %}
+                            <span class="text-success">Sin alertas</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="progress-heritage mb-3">
+                        <div class="bar" style="width:{{ edificio.salud_score }}%;background:{% if edificio.salud_score >= 80 %}var(--success){% elif edificio.salud_score >= 60 %}var(--warning){% else %}var(--danger){% endif %}"></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-accent w-100">
+                        <i class="bi bi-eye me-2"></i>Ver Detalles
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-building"></i>
+        <h4>No hay edificios</h4>
+        <p class="text-muted">Comienza registrando tu primer edificio patrimonial</p>
+        <a href="{% url 'monitor:edificio_create' %}" class="btn btn-accent btn-lg">
+            <i class="bi bi-plus-lg me-2"></i>Crear Edificio
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Comparativa - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1><i class="bi bi-bar-chart-line"></i> Comparativa de Edificios</h1>
+        <p>Compara el estado y condiciones de tus edificios lado a lado</p>
+        <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary mt-2"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+
+<div class="container fade-in">
+    <form method="get" class="card-custom p-3 mb-4">
+        <div class="row align-items-end">
+            <div class="col-md-10">
+                <label class="form-label fw-semibold">Selecciona edificios para comparar:</label>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for e in edificios %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="edificios" value="{{ e.pk }}" id="e{{ e.pk }}" {% if e.pk|stringformat:"s" in ids_seleccionados %}checked{% endif %}>
+                        <label class="form-check-label" for="e{{ e.pk }}">{{ e.nombre }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-accent w-100"><i class="bi bi-bar-chart me-1"></i>Comparar</button>
+            </div>
+        </div>
+    </form>
+
+    {% if datos %}
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card-custom">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-heart-pulse me-2" style="color:var(--accent)"></i>Puntuación de Salud</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="saludChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        {% for d in datos %}
+        <div class="col-md-4">
+            <div class="card-custom h-100">
+                <div class="card-body text-center">
+                    <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:80px;height:80px;background:var(--gradient-hero);color:white;font-size:1.5rem;">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <h5 class="fw-bold">{{ d.edificio.nombre }}</h5>
+                    <p class="text-muted small">{{ d.edificio.ciudad }} | {{ d.edificio.get_categoria_display }}</p>
+
+                    <div class="progress-heritage mb-3">
+                        <div class="bar" style="width:{{ d.edificio.salud_score }}%;background:{% if d.edificio.salud_score >= 80 %}var(--success){% elif d.edificio.salud_score >= 60 %}var(--warning){% else %}var(--danger){% endif %}"></div>
+                    </div>
+                    <p class="fw-bold mb-3">Salud: {{ d.edificio.salud_score }}/100</p>
+
+                    <div class="row text-start">
+                        <div class="col-6 mb-2"><small class="text-muted">Sensores:</small><br><strong>{{ d.edificio.num_sensores }}</strong></div>
+                        <div class="col-6 mb-2"><small class="text-muted">Alertas:</small><br><strong class="{% if d.edificio.alertas_activas > 0 %}text-danger{% endif %}">{{ d.edificio.alertas_activas }}</strong></div>
+                        <div class="col-6 mb-2"><small class="text-muted">Temp. Media:</small><br><strong>{{ d.temp_avg|default:"-" }}°C</strong></div>
+                        <div class="col-6 mb-2"><small class="text-muted">Humedad Media:</small><br><strong>{{ d.hum_avg|default:"-" }}%</strong></div>
+                        <div class="col-6 mb-2"><small class="text-muted">Vibración:</small><br><strong>{{ d.vib_avg|default:"-" }}</strong></div>
+                        <div class="col-6 mb-2"><small class="text-muted">Lecturas:</small><br><strong>{{ d.num_lecturas }}</strong></div>
+                    </div>
+
+                    <a href="{% url 'monitor:edificio_detail' pk=d.edificio.pk %}" class="btn btn-accent w-100 mt-3">
+                        <i class="bi bi-eye me-2"></i>Ver Detalles
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-bar-chart-line"></i>
+        <h4>Selecciona edificios para comparar</h4>
+        <p class="text-muted">Elige al menos 2 edificios en el formulario superior</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if datos %}
+<script>
+const nombres = [{% for d in datos %}'{{ d.edificio.nombre }}',{% endfor %}];
+const salud = [{% for d in datos %}{{ d.edificio.salud_score }},{% endfor %}];
+const temp = [{% for d in datos %}{{ d.temp_avg|default:"null" }},{% endfor %}];
+const hum = [{% for d in datos %}{{ d.hum_avg|default:"null" }},{% endfor %}];
+const ctx = document.getElementById('saludChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: nombres,
+        datasets: [
+            { label: 'Salud', data: salud, backgroundColor: '#e9456080', borderColor: '#e94560', borderWidth: 2 },
+            { label: 'Temperatura (°C)', data: temp, backgroundColor: '#0f346080', borderColor: '#0f3460', borderWidth: 2 },
+            { label: 'Humedad (%)', data: hum, backgroundColor: '#d4a85380', borderColor: '#d4a853', borderWidth: 2 },
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 15 } } },
+        scales: { y: { beginAtZero: true, grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

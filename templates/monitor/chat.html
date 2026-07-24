@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Chat - {{ edificio.nombre }} - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .chat-container { height: 60vh; overflow-y: auto; background: #f8f9fa; border-radius: 12px; padding: 16px; }
+    .chat-bubble { max-width: 75%; padding: 10px 16px; border-radius: 16px; margin-bottom: 8px; position: relative; }
+    .chat-bubble.mia { background: var(--accent); color: white; margin-left: auto; border-bottom-right-radius: 4px; }
+    .chat-bubble.otra { background: white; border: 1px solid #e9ecef; border-bottom-left-radius: 4px; }
+    .chat-bubble .autor { font-size: 0.75rem; font-weight: 700; margin-bottom: 2px; }
+    .chat-bubble.mia .autor { color: rgba(255,255,255,0.8); }
+    .chat-bubble.otra .autor { color: var(--accent); }
+    .chat-bubble .hora { font-size: 0.7rem; opacity: 0.7; }
+    .chat-input-area { background: white; border-top: 1px solid #e9ecef; padding: 12px; border-radius: 0 0 12px 12px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-2"><li class="breadcrumb-item"><a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="text-white-50">{{ edificio.nombre }}</a></li><li class="breadcrumb-item text-white active">Chat</li></ol></nav>
+        <h1><i class="bi bi-chat-dots"></i> Chat del Equipo</h1>
+        <p>{{ edificio.nombre }} - Comunica con tu equipo</p>
+        <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-secondary mt-2"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-custom" style="overflow:hidden;">
+                <div class="card-header"><h5 class="mb-0 fw-bold"><i class="bi bi-chat-left-text me-2"></i>Conversación</h5></div>
+                <div class="chat-container" id="chatContainer">
+                    {% for m in mensajes %}
+                    <div class="chat-bubble {% if m.autor == request.user %}mia{% else %}otra{% endif %}">
+                        {% if m.autor != request.user %}<div class="autor">{{ m.autor.get_full_name|default:m.autor.username }}</div>{% endif %}
+                        <div>{{ m.texto }}</div>
+                        <div class="hora">{{ m.fecha|date:"d/m H:i" }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-5"><i class="bi bi-chat" style="font-size:3rem;"></i><p class="mt-2">Empieza la conversación</p></div>
+                    {% endfor %}
+                </div>
+                <form method="post" class="chat-input-area d-flex gap-2">
+                    {% csrf_token %}
+                    <input type="text" name="texto" class="form-control" placeholder="Escribe un mensaje..." autofocus required>
+                    <button type="submit" class="btn btn-accent"><i class="bi bi-send"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+const container = document.getElementById('chatContainer');
+container.scrollTop = container.scrollHeight;
+</script>
+{% endblock %}

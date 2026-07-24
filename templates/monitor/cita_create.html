@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Nueva Cita{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2 style="color:var(--gold);"><i class="bi bi-calendar-plus"></i> Nueva Cita</h2>
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3"><label class="form-label">Titulo</label><input name="titulo" class="form-control" required placeholder="Ej: Reunion con arquitecto"></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><textarea name="descripcion" class="form-control" rows="2"></textarea></div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3"><label class="form-label">Fecha/Hora Inicio</label><input name="fecha_inicio" type="datetime-local" class="form-control" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Fecha/Hora Fin</label><input name="fecha_fin" type="datetime-local" class="form-control" required></div>
+                    </div>
+                    <div class="mb-3"><label class="form-label">Ubicacion</label><input name="ubicacion" class="form-control" placeholder="Direccion o sala"></div>
+                    <div class="mb-3">
+                        <label class="form-label">Participantes</label>
+                        <select name="participantes" class="form-select" multiple>
+                            {% for u in usuarios %}<option value="{{ u.pk }}">{{ u.get_full_name|default:u.username }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-accent w-100"><i class="bi bi-check-circle"></i> Crear Cita</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

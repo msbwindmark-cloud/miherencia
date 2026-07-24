@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}{{ equipo.nombre }} - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-2"><li class="breadcrumb-item"><a href="{% url 'monitor:equipo_list' %}" class="text-white-50">Equipos</a></li><li class="breadcrumb-item text-white active">{{ equipo.nombre }}</li></ol></nav>
+        <h1><i class="bi bi-people"></i> {{ equipo.nombre }}</h1>
+        <p>{{ equipo.descripcion }}</p>
+        <a href="{% url 'monitor:equipo_list' %}" class="btn btn-outline-secondary mt-2"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card-custom">
+                <div class="card-header"><h5 class="mb-0 fw-bold"><i class="bi bi-persons me-2"></i>Miembros ({{ equipo.num_miembros }})</h5></div>
+                <div class="card-body">
+                    {% for u in equipo.miembros.all %}
+                    <div class="d-flex align-items-center py-2 border-bottom">
+                        <div class="rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:var(--gradient-accent);color:white;"><i class="bi bi-person"></i></div>
+                        <div><strong>{{ u.get_full_name|default:u.username }}</strong><br><small class="text-muted">{{ u.email }}</small></div>
+                    </div>
+                    {% empty %}<p class="text-muted">Sin miembros</p>{% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card-custom">
+                <div class="card-header"><h5 class="mb-0 fw-bold"><i class="bi bi-building me-2"></i>Edificios ({{ equipo.num_edificios }})</h5></div>
+                <div class="card-body">
+                    {% for e in equipo.edificios.all %}
+                    <div class="d-flex align-items-center py-2 border-bottom">
+                        <div class="rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:var(--gradient-hero);color:white;"><i class="bi bi-building"></i></div>
+                        <div class="flex-grow-1"><strong>{{ e.nombre }}</strong><br><small class="text-muted">{{ e.ciudad }}</small></div>
+                        <a href="{% url 'monitor:edificio_detail' pk=e.pk %}" class="btn btn-sm btn-outline-accent"><i class="bi bi-eye"></i></a>
+                    </div>
+                    {% empty %}<p class="text-muted">Sin edificios asignados</p>{% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

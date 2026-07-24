@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}{{ sensor.nombre }} - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-2">
+                        <li class="breadcrumb-item"><a href="{% url 'monitor:edificio_list' %}" class="text-white-50">Edificios</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'monitor:edificio_detail' pk=sensor.edificio.pk %}" class="text-white-50">{{ sensor.edificio.nombre }}</a></li>
+                        <li class="breadcrumb-item text-white active">{{ sensor.nombre }}</li>
+                    </ol>
+                </nav>
+                <h1><i class="bi bi-hdd-network"></i> {{ sensor.nombre }}</h1>
+                <p>{{ sensor.get_tipo_display }} - {{ sensor.edificio.nombre }}</p>
+                <a href="{% url 'monitor:edificio_detail' pk=sensor.edificio.pk %}" class="btn btn-outline-secondary mt-2"><i class="bi bi-arrow-left"></i> Volver</a>
+                <p class="mb-0">{{ sensor.get_tipo_display }} - {{ sensor.ubicacionDescripcion }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'monitor:sensor_update' pk=sensor.pk %}" class="btn btn-outline-accent me-2"><i class="bi bi-pencil"></i></a>
+                <a href="{% url 'monitor:lectura_create' sensor_pk=sensor.pk %}" class="btn btn-accent me-2"><i class="bi bi-plus-lg"></i> Nueva Lectura</a>
+                <button type="button" class="btn btn-delete" style="background:#dc3545;color:white;border:none;" onclick="confirmarEliminar('{% url 'monitor:sensor_delete' pk=sensor.pk %}')"><i class="bi bi-trash"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container fade-in">
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card" style="border-color:var(--accent)">
+                <div class="stat-number" style="color:var(--accent)">
+                    {% if sensor.ultima_lectura %}{{ sensor.ultima_lectura.valor }}<small style="font-size:0.6em"> {{ sensor.unidad_medida }}</small>{% else %}-{% endif %}
+                </div>
+                <div class="stat-label">Última Lectura</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-color:var(--accent2)">
+                <div class="stat-number" style="color:var(--accent2)">{{ sensor.lecturas_hoy }}</div>
+                <div class="stat-label">Lecturas Hoy</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-color:var(--warning)">
+                <div class="stat-number" style="color:var(--warning)">{{ sensor.umbral_min|default:"-" }} - {{ sensor.umbral_max|default:"-" }}</div>
+                <div class="stat-label">Umbrales ({{ sensor.unidad_medida }})</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-color:var(--gold)">
+                <div class="stat-number" style="color:var(--gold)"><span class="pulse-dot"></span></div>
+                <div class="stat-label">Estado: {% if sensor.activo %}Activo{% else %}Inactivo{% endif %}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card-custom mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2" style="color:var(--accent)"></i>Lecturas - Últimas 24h</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="sensorChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <div class="card-custom">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-table me-2" style="color:var(--accent2)"></i>Historial de Lecturas</h5>
+                    <a href="{% url 'monitor:lectura_create' sensor_pk=sensor.pk %}" class="btn btn-accent btn-sm"><i class="bi bi-plus-lg me-1"></i>Nueva</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0">
+                            <thead><tr><th>Fecha/Hora</th><th>Valor</th><th>Estado</th></tr></thead>
+                            <tbody>
+                                {% for l in lecturas %}
+                                <tr>
+                                    <td>{{ l.fecha_hora|date:"d/m/Y H:i:s" }}</td>
+                                    <td class="fw-bold {% if l.es_alerta %}text-danger{% endif %}">{{ l.valor }} {{ sensor.unidad_medida }}</td>
+                                    <td>{% if l.es_alerta %}<span class="badge bg-danger">ALERTA</span>{% else %}<span class="badge bg-success">OK</span>{% endif %}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="3" class="text-center text-muted py-4">Sin lecturas registradas</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card-custom mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-qr-code me-2" style="color:var(--accent)"></i>QR del Sensor</h5>
+                </div>
+                <div class="card-body text-center">
+                    <img src="data:image/png;base64,{{ sensor.qr_code_b64 }}" style="width:200px;height:200px;border:3px solid #f0f0f0;border-radius:16px;" alt="QR">
+                    <p class="text-muted mt-2 small">Escanea para ver datos del sensor</p>
+                </div>
+            </div>
+
+            <div class="card-custom">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-bell me-2" style="color:var(--warning)"></i>Alertas Recientes</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if alertas %}
+                    <div class="list-group list-group-flush">
+                        {% for a in alertas %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <span class="badge bg-{% if a.resuelta %}secondary{% elif a.severidad == 'critical' %}danger{% elif a.severidad == 'warning' %}warning text-dark{% else %}info{% endif %} rounded-pill">
+                                    {{ a.get_severidad_display }}
+                                </span>
+                                <small class="text-muted">{{ a.fecha_creacion|timesince }}</small>
+                            </div>
+                            <small class="d-block mt-1">{{ a.mensaje|truncatewords:10 }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state py-3"><h6 class="text-muted">Sin alertas</h6></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const datos = {{ chart_data|safe }};
+const ctx = document.getElementById('sensorChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: datos.map(d => d.x),
+        datasets: [{
+            label: '{{ sensor.get_tipo_display }} ({{ sensor.unidad_medida }})',
+            data: datos.map(d => d.y),
+            borderColor: '#e94560',
+            backgroundColor: 'rgba(233,69,96,0.1)',
+            fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2,
+            pointBackgroundColor: datos.map(d => d.alerta ? '#dc3545' : '#e94560'),
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { grid: { display: false } }, y: { grid: { color: '#f0f0f0' } } },
+        interaction: { intersect: false, mode: 'index' },
+    }
+});
+
+function confirmarEliminar(url) {
+    Swal.fire({
+        title: '¿Eliminar sensor?',
+        text: 'Se eliminarán todas las lecturas asociadas',
+        icon: 'warning', showCancelButton: true,
+        confirmButtonColor: '#e94560', cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar'
+    }).then(r => { if (r.isConfirmed) window.location.href = url; });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block title %}Visor 3D - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-box"></i> Visor 3D - {{ edificio.nombre }}</h2>
+    <a href="{% url 'monitor:edificio_detail' edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+<div class="glass-card p-0 overflow-hidden" style="height:600px; position:relative;">
+    <canvas id="canvas3d" style="width:100%; height:100%;"></canvas>
+    <div style="position:absolute; bottom:20px; left:20px; z-index:10;" class="glass-card p-3">
+        <small class="text-muted">
+            <i class="bi bi-info-circle"></i> Arrastra para rotar | Scroll para zoom<br>
+            Tipo: {{ edificio.get_tipo_display() }} | Estilo: {{ edificio.get_estilo_arquitectonico_display|default:"N/A" }}<br>
+            {{ edificio.num_plantas }} plantas | {{ edificio.año_construccion|default:"N/A" }}
+        </small>
+    </div>
+    <div style="position:absolute; top:20px; right:20px; z-index:10;">
+        <button class="btn btn-sm btn-glass me-1" onclick="changeView('front')" title="Frontal"><i class="bi bi-arrows-fullscreen"></i></button>
+        <button class="btn btn-sm btn-glass me-1" onclick="changeView('top')" title="Superior"><i class="bi bi-arrow-up"></i></button>
+        <button class="btn btn-sm btn-glass" onclick="toggleWireframe()" title="Wireframe"><i class="bi bi-grid-3x3"></i></button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const canvas = document.getElementById('canvas3d');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a1a);
+const camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+
+// Edificio base
+const plantas = {{ edificio.num_plantas|default:3 }};
+const ancho = 8, fondo = 6;
+const grupo = new THREE.Group();
+
+// Muros
+const muroMat = new THREE.MeshPhongMaterial({ color: 0xd4a853, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+for (let p = 0; p < plantas; p++) {
+    const y = p * 3;
+    // Frente
+    const frente = new THREE.Mesh(new THREE.BoxGeometry(ancho, 2.8, 0.2), muroMat);
+    frente.position.set(0, y + 1.4, fondo/2);
+    grupo.add(frente);
+    // Atras
+    const atras = new THREE.Mesh(new THREE.BoxGeometry(ancho, 2.8, 0.2), muroMat);
+    atras.position.set(0, y + 1.4, -fondo/2);
+    grupo.add(atras);
+    // Izquierda
+    const izq = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.8, fondo), muroMat);
+    izq.position.set(-ancho/2, y + 1.4, 0);
+    grupo.add(izq);
+    // Derecha
+    const der = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.8, fondo), muroMat);
+    der.position.set(ancho/2, y + 1.4, 0);
+    grupo.add(der);
+    // Ventanas
+    const ventanaMat = new THREE.MeshPhongMaterial({ color: 0x4488cc, transparent: true, opacity: 0.6, emissive: 0x112244 });
+    for (let v = -2; v <= 2; v += 2) {
+        const ventana = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 0.05), ventanaMat);
+        ventana.position.set(v, y + 1.5, fondo/2 + 0.15);
+        grupo.add(ventana);
+    }
+}
+
+// Techo
+const techoMat = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
+const techo = new THREE.Mesh(new THREE.BoxGeometry(ancho + 0.5, 0.3, fondo + 0.5), techoMat);
+techo.position.set(0, plantas * 3, 0);
+grupo.add(techo);
+
+// Suelo
+const sueloMat = new THREE.MeshPhongMaterial({ color: 0x2d2d2d });
+const suelo = new THREE.Mesh(new THREE.BoxGeometry(20, 0.1, 20), sueloMat);
+suelo.position.set(0, -0.05, 0);
+grupo.add(suelo);
+
+// Puerta
+const puertaMat = new THREE.MeshPhongMaterial({ color: 0x654321 });
+const puerta = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.4, 0.1), puertaMat);
+puerta.position.set(0, 1.2, fondo/2 + 0.15);
+grupo.add(puerta);
+
+scene.add(grupo);
+scene.add(new THREE.AmbientLight(0x404040, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+dirLight.position.set(10, 15, 10);
+scene.add(dirLight);
+const pointLight = new THREE.PointLight(0xd4a853, 0.5);
+pointLight.position.set(-5, 8, 5);
+scene.add(pointLight);
+
+camera.position.set(15, 12, 15);
+camera.lookAt(0, plantas * 1.5, 0);
+
+let isDragging = false, prevMouse = {x:0, y:0}, rotY = 0.5, rotX = 0.4;
+let wireframe = false;
+
+canvas.addEventListener('mousedown', e => { isDragging = true; prevMouse = {x: e.clientX, y: e.clientY}; });
+canvas.addEventListener('mouseup', () => isDragging = false);
+canvas.addEventListener('mouseleave', () => isDragging = false);
+canvas.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    rotY += (e.clientX - prevMouse.x) * 0.005;
+    rotX += (e.clientY - prevMouse.y) * 0.005;
+    rotX = Math.max(-1, Math.min(1.2, rotX));
+    prevMouse = {x: e.clientX, y: e.clientY};
+});
+canvas.addEventListener('wheel', e => {
+    camera.position.multiplyScalar(e.deltaY > 0 ? 1.05 : 0.95);
+});
+
+function changeView(view) {
+    if (view === 'front') { camera.position.set(0, plantas * 1.5, 20); rotY = 0; rotX = 0; }
+    else if (view === 'top') { camera.position.set(0, 25, 0.1); rotX = 1.2; }
+    camera.lookAt(0, plantas * 1.5, 0);
+}
+
+function toggleWireframe() {
+    wireframe = !wireframe;
+    grupo.traverse(c => { if (c.material) c.material.wireframe = wireframe; });
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    const dist = camera.position.length();
+    camera.position.x = Math.sin(rotY) * dist * Math.cos(rotX);
+    camera.position.y = Math.sin(rotX) * dist * 0.8 + plantas * 1.5;
+    camera.position.z = Math.cos(rotY) * dist * Math.cos(rotX);
+    camera.lookAt(0, plantas * 1.5, 0);
+    renderer.render(scene, camera);
+}
+animate();
+window.addEventListener('resize', () => {
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+});
+</script>
+{% endblock %}

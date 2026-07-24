@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Herramienta{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-wrench"></i> Nueva Herramienta</h2>
+    <a href="{% url 'monitor:herramienta_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+<div class="glass-card p-4" style="max-width:700px;">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3"><label class="form-label">Nombre *</label><input name="nombre" class="form-control form-control-dark" required></div>
+        <div class="mb-3"><label class="form-label">Descripcion</label><textarea name="descripcion" class="form-control form-control-dark" rows="2"></textarea></div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6"><label class="form-label">Categoria</label><input name="categoria" class="form-control form-control-dark" placeholder="ej: Electrica, Mano, Medida"></div>
+            <div class="col-md-6"><label class="form-label">Numero de Serie</label><input name="numero_serie" class="form-control form-control-dark"></div>
+        </div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select form-select-dark">
+                    <option value="disponible">Disponible</option>
+                    <option value="en_uso">En Uso</option>
+                    <option value="mantenimiento">En Mantenimiento</option>
+                </select>
+            </div>
+            <div class="col-md-4"><label class="form-label">Ubicacion</label><input name="ubicacion" class="form-control form-control-dark"></div>
+            <div class="col-md-4"><label class="form-label">Costo (€)</label><input name="costo" type="number" step="0.01" class="form-control form-control-dark"></div>
+        </div>
+        <button type="submit" class="btn btn-accent w-100"><i class="bi bi-check-lg"></i> Guardar Herramienta</button>
+    </form>
+</div>
+{% endblock %}

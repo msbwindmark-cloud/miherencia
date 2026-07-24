@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Eficiencia Energética - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-lightning-charge"></i> Eficiencia Energética</h1>
+                <p>Control de consumo energético y emisiones del patrimonio</p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if edificio %}
+                <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-accent me-2">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-custom alert-dismissible fade show">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if registros %}
+    <div class="card-custom">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Edificio</th>
+                            <th>Fecha</th>
+                            <th>Electricidad</th>
+                            <th>Gas</th>
+                            <th>Agua</th>
+                            <th>Solar</th>
+                            <th>CO₂</th>
+                            <th>Coste</th>
+                            <th>Certificado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in registros %}
+                        <tr>
+                            <td class="fw-semibold">{{ r.edificio.nombre }}</td>
+                            <td>{{ r.fecha|date:"d/m/Y" }}</td>
+                            <td>{{ r.consumo_electricidad }} kWh</td>
+                            <td>{{ r.consumo_gas }} m³</td>
+                            <td>{{ r.consumo_agua }} L</td>
+                            <td class="text-success fw-bold">{{ r.produccion_solar }} kWh</td>
+                            <td class="fw-bold">{{ r.emisiones_co2 }} kg</td>
+                            <td>{{ r.coste_total }} €</td>
+                            <td>
+                                <span class="badge rounded-pill {% if r.certificado_energetico == 'A' %}bg-success{% elif r.certificado_energetico == 'B' %}bg-success{% elif r.certificado_energetico == 'C' %}bg-info{% elif r.certificado_energetico == 'D' %}bg-warning text-dark{% elif r.certificado_energetico == 'E' %}bg-warning text-dark{% elif r.certificado_energetico == 'F' %}bg-danger{% else %}bg-danger{% endif %}">
+                                    {{ r.certificado_energetico }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-lightning-charge" style="color:var(--accent)"></i>
+        <h4>Sin registros energéticos</h4>
+        <p class="text-muted">Aún no se han registrado datos de eficiencia energética</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

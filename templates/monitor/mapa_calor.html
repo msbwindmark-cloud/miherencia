@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Mapa de Calor - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-thermometer-half"></i> Mapa de Calor - {{ edificio.nombre }}</h2>
+    <a href="{% url 'monitor:edificio_detail' edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="glass-card p-3">
+            <h5 class="mb-3">Distribucion de Temperatura</h5>
+            <div id="heatmap" style="height:400px; position:relative; background: linear-gradient(180deg, #ff4444 0%, #ffaa00 30%, #44ff44 60%, #4444ff 100%); border-radius:12px; overflow:hidden;">
+                <div style="position:absolute; inset:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(80px,1fr)); gap:8px; padding:12px;">
+                    {% for lectura in lecturas %}
+                    <div style="border-radius:8px; padding:6px; text-align:center; font-size:0.7em; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); color:#fff;">
+                        <div>{{ lectura.sensor.nombre }}</div>
+                        <div style="font-size:1.3em; font-weight:bold;">{{ lectura.valor|floatformat:1 }}°</div>
+                        <div style="opacity:0.7;">{{ lectura.fecha_medicion|date:"H:i" }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="glass-card p-3 mb-3">
+            <h5>Leyenda</h5>
+            <div class="d-flex align-items-center mb-2"><span class="badge me-2" style="background:#ff4444; width:30px;">&nbsp;</span> &gt;35°C Peligro</div>
+            <div class="d-flex align-items-center mb-2"><span class="badge me-2" style="background:#ffaa00; width:30px;">&nbsp;</span> 25-35°C Alerta</div>
+            <div class="d-flex align-items-center mb-2"><span class="badge me-2" style="background:#44ff44; width:30px;">&nbsp;</span> 15-25°C Normal</div>
+            <div class="d-flex align-items-center"><span class="badge me-2" style="background:#4444ff; width:30px;">&nbsp;</span> &lt;15°C Frio</div>
+        </div>
+        <div class="glass-card p-3">
+            <h5>Estadisticas</h5>
+            {% if lecturas %}
+            <p class="mb-1"><strong>Sensores activos:</strong> {{ lecturas|length }}</p>
+            <p class="mb-0"><strong>Ultima actualizacion:</strong> {{ lecturas.0.fecha_medicion|date:"d/m/Y H:i" }}</p>
+            {% else %}
+            <p class="text-muted mb-0">No hay datos de temperatura disponibles</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

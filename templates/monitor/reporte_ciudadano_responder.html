@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Responder Reporte - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-reply"></i> Responder Reporte</h1>
+                <p>Responde al reporte de {{ reporte.ciudadano_nombre }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'monitor:reporte_ciudadano_list' %}" class="btn btn-outline-accent me-2">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-custom alert-dismissible fade show">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card-custom">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2" style="color:var(--accent)"></i>Detalle del Reporte</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Título:</span>
+                            <strong>{{ reporte.titulo }}</strong>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Ciudadano:</span>
+                            <strong>{{ reporte.ciudadano_nombre }}</strong>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Email:</span>
+                            <strong>{{ reporte.ciudadano_email }}</strong>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Tipo:</span>
+                            <span class="badge rounded-pill {% if reporte.tipo == 'dano' %}bg-danger{% elif reporte.tipo == 'vandalismo' %}bg-warning text-dark{% elif reporte.tipo == 'limpieza' %}bg-info{% elif reporte.tipo == 'iluminacion' %}bg-warning text-dark{% elif reporte.tipo == 'accesibilidad' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {{ reporte.get_tipo_display }}
+                            </span>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Estado:</span>
+                            <span class="badge rounded-pill {% if reporte.estado == 'resuelto' %}bg-success{% elif reporte.estado == 'en_progreso' %}bg-info{% elif reporte.estado == 'revisado' %}bg-primary{% elif reporte.estado == 'rechazado' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                {{ reporte.get_estado_display }}
+                            </span>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Votos:</span>
+                            <strong>{{ reporte.votos }}</strong>
+                        </li>
+                        <li class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Fecha:</span>
+                            <strong>{{ reporte.fecha_creacion|date:"d/m/Y H:i" }}</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card-custom">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-chat-dots me-2" style="color:var(--accent2)"></i>Descripción del Ciudadano</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ reporte.descripcion }}</p>
+                    {% if reporte.imagen %}
+                    <img src="{{ reporte.imagen.url }}" alt="Imagen reporte" class="img-fluid rounded mt-2" style="max-height:200px;">
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card-custom mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-reply me-2" style="color:var(--accent)"></i>Tu Respuesta</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Respuesta</label>
+                            <textarea name="respuesta" class="form-control" rows="5" required placeholder="Escribe tu respuesta al ciudadano..."></textarea>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'monitor:reporte_ciudadano_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-accent btn-lg">
+                                <i class="bi bi-send me-2"></i>Enviar Respuesta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

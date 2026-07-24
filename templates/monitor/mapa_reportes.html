@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block title %}Mapa de Reportes - SmartHeritage{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-geo-alt"></i> Mapa de Reportes</h1>
+                <p>Ubicacion geografica de los reportes ciudadanos sobre edificios patrimoniales</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-accent">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card text-center p-3">
+                <i class="bi bi-geo-alt-fill fs-2 mb-2" style="color:var(--danger);"></i>
+                <h4 class="mb-0">{{ total_reportes|default:"0" }}</h4>
+                <small class="text-muted">Total Reportes</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center p-3">
+                <i class="bi bi-exclamation-triangle-fill fs-2 mb-2" style="color:var(--warning);"></i>
+                <h4 class="mb-0">{{ reportes_pendientes|default:"0" }}</h4>
+                <small class="text-muted">Pendientes</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center p-3">
+                <i class="bi bi-tools fs-2 mb-2" style="color:var(--accent);"></i>
+                <h4 class="mb-0">{{ reportes_en_proceso|default:"0" }}</h4>
+                <small class="text-muted">En Proceso</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center p-3">
+                <i class="bi bi-check-circle-fill fs-2 mb-2" style="color:var(--success);"></i>
+                <h4 class="mb-0">{{ reportes_resueltos|default:"0" }}</h4>
+                <small class="text-muted">Resueltos</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-custom mb-4">
+        <div class="card-header fw-bold" style="background:var(--accent);color:#fff;">
+            <i class="bi bi-map me-1"></i> Mapa Interactivo
+        </div>
+        <div class="card-body p-0">
+            <div id="mapaReportes" style="height:500px;width:100%;border-radius:0 0 0.5rem 0.5rem;background:#1a1a2e;"></div>
+        </div>
+    </div>
+
+    <div class="card-custom">
+        <div class="card-header fw-bold" style="background:var(--accent);color:#fff;">
+            <i class="bi bi-list-ul me-1"></i> Lista de Reportes
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Reporte</th>
+                            <th>Edificio</th>
+                            <th>Ciudadano</th>
+                            <th class="text-center">Fecha</th>
+                            <th class="text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reporte in reportes %}
+                        <tr>
+                            <td class="fw-bold">{{ reporte.titulo }}</td>
+                            <td>{{ reporte.edificio.nombre }}</td>
+                            <td>{{ reporte.ciudadano_nombre|default:"Anonimo" }}</td>
+                            <td class="text-center">{{ reporte.fecha_creacion|date:"d/m/Y" }}</td>
+                            <td class="text-center">
+                                {% if reporte.estado == 'pendiente' %}
+                                <span class="badge" style="background:var(--warning);color:#000;">Pendiente</span>
+                                {% elif reporte.estado == 'en_proceso' %}
+                                <span class="badge" style="background:var(--accent);">En Proceso</span>
+                                {% elif reporte.estado == 'resuelto' %}
+                                <span class="badge" style="background:var(--success);">Resuelto</span>
+                                {% else %}
+                                <span class="badge" style="background:var(--accent2,#555);">{{ reporte.get_estado_display }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="bi bi-geo-alt fs-3 d-block mb-2"></i>
+                                No hay reportes registrados
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var mapa = L.map('mapaReportes').setView([{{ latitud_default|default:"-12.0464" }}, {{ longitud_default|default:"-77.0428" }}], 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap',
+        maxZoom: 18
+    }).addTo(mapa);
+
+    var reportes = {{ reportes_json|safe }};
+
+    var iconoRojo = L.divIcon({
+        html: '<div style="background:var(--danger);width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        className: ''
+    });
+
+    var iconoAmarillo = L.divIcon({
+        html: '<div style="background:var(--warning);width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        className: ''
+    });
+
+    var iconoVerde = L.divIcon({
+        html: '<div style="background:var(--success);width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        className: ''
+    });
+
+    var iconoAzul = L.divIcon({
+        html: '<div style="background:var(--accent);width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        className: ''
+    });
+
+    reportes.forEach(function(reporte) {
+        var icono;
+        if (reporte.estado === 'pendiente') {
+            icono = iconoRojo;
+        } else if (reporte.estado === 'en_proceso') {
+            icono = iconoAmarillo;
+        } else if (reporte.estado === 'resuelto') {
+            icono = iconoVerde;
+        } else {
+            icono = iconoAzul;
+        }
+
+        var popup = '<div style="min-width:200px;">' +
+            '<h6 style="color:var(--accent);margin-bottom:5px;">' + reporte.titulo + '</h6>' +
+            '<p class="mb-1"><strong>Edificio:</strong> ' + reporte.edificio + '</p>' +
+            '<p class="mb-1"><strong>Ciudadano:</strong> ' + (reporte.ciudadano || 'Anonimo') + '</p>' +
+            '<p class="mb-1"><strong>Fecha:</strong> ' + reporte.fecha + '</p>' +
+            '<p class="mb-0"><strong>Estado:</strong> <span class="badge" style="background:var(--accent);">' + reporte.estado + '</span></p>' +
+            '</div>';
+
+        L.marker([reporte.lat, reporte.lng], {icon: icono})
+            .bindPopup(popup)
+            .addTo(mapa);
+    });
+
+    if (reportes.length > 0) {
+        var group = new L.featureGroup(reportes.map(function(r) {
+            return L.marker([r.lat, r.lng]);
+        }));
+        mapa.fitBounds(group.getBounds().pad(0.1));
+    }
+});
+</script>
+{% endblock %}

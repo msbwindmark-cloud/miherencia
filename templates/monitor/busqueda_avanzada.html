@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Busqueda Avanzada{% endblock %}
+{% block content %}
+<h2 style="color:var(--gold);"><i class="bi bi-funnel"></i> Busqueda Avanzada</h2>
+<div class="card glass-card border-0 mb-4">
+    <div class="card-body">
+        <form method="get">
+            <div class="row g-2">
+                <div class="col-md-4"><input name="q" class="form-control" placeholder="Texto a buscar..." value="{{ q }}"></div>
+                <div class="col-md-3">
+                    <select name="tipo" class="form-select">
+                        <option value="">Todos los tipos</option>
+                        <option value="edificios" {% if filtro_tipo == 'edificios' %}selected{% endif %}>Edificios</option>
+                        <option value="alertas" {% if filtro_tipo == 'alertas' %}selected{% endif %}>Alertas</option>
+                        <option value="facturas" {% if filtro_tipo == 'facturas' %}selected{% endif %}>Facturas</option>
+                        <option value="gastos" {% if filtro_tipo == 'gastos' %}selected{% endif %}>Gastos</option>
+                        <option value="inventario" {% if filtro_tipo == 'inventario' %}selected{% endif %}>Inventario</option>
+                        <option value="bitacora" {% if filtro_tipo == 'bitacora' %}selected{% endif %}>Bitacora</option>
+                    </select>
+                </div>
+                <div class="col-md-2"><input name="fecha_desde" type="date" class="form-control" placeholder="Desde"></div>
+                <div class="col-md-2"><button type="submit" class="btn btn-accent w-100"><i class="bi bi-search"></i> Buscar</button></div>
+            </div>
+        </form>
+    </div>
+</div>
+{% if resultados %}
+<p style="color:var(--text-muted);">{{ total }} resultados encontrados</p>
+{% for r in resultados %}
+<div class="card glass-card border-0 mb-2">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex justify-content-between">
+            <div>
+                <span class="badge" style="background:var(--accent);">{{ r.tipo }}</span>
+                <strong>{{ r.objeto }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% elif q %}
+<div class="text-center py-4"><p style="color:var(--text-muted);">No se encontraron resultados para "{{ q }}"</p></div>
+{% endif %}
+<a href="{% url 'monitor:dashboard' %}" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Nuevo Evento Historico - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-clock-history"></i> Nuevo Evento Historico</h2>
+    <a href="{% url 'monitor:timeline_historico_list' pk=edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+<div class="glass-card p-4" style="max-width:700px;">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3"><label class="form-label">Titulo del Evento *</label><input name="titulo" class="form-control form-control-dark" required></div>
+        <div class="mb-3"><label class="form-label">Descripcion *</label><textarea name="descripcion" class="form-control form-control-dark" rows="3" required></textarea></div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-4"><label class="form-label">Fecha del Evento *</label><input name="fecha_evento" type="date" class="form-control form-control-dark" required></div>
+            <div class="col-md-4">
+                <label class="form-label">Categoria</label>
+                <select name="categoria" class="form-select form-select-dark">
+                    <option value="restauracion">Restauracion</option>
+                    <option value="construccion">Construccion</option>
+                    <option value="dano">Dano / Degradacion</option>
+                    <option value="evento_historico">Evento Historico</option>
+                    <option value="proteccion">Proteccion / Declaracion</option>
+                    <option value="modificacion">Modificacion</option>
+                </select>
+            </div>
+            <div class="col-md-4"><label class="form-label">Fuente de referencia</label><input name="fuente" class="form-control form-control-dark" placeholder="Libro, URL, archivo..."></div>
+        </div>
+        <button type="submit" class="btn btn-accent w-100"><i class="bi bi-check-lg"></i> Guardar Evento</button>
+    </form>
+</div>
+{% endblock %}

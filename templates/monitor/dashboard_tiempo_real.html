@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}Tiempo Real - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--success); display: inline-block; animation: livePulse 1.5s infinite; }
+    @keyframes livePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .stream-item {
+        padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        transition: all 0.3s; animation: slideIn 0.3s ease;
+    }
+    .stream-item:hover { background: rgba(233,69,96,0.05); }
+    .stream-item.alerta { border-left: 3px solid var(--danger); background: rgba(231,76,60,0.05); }
+    .stream-item.ok { border-left: 3px solid var(--success); }
+    @keyframes slideIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-broadcast" style="color:var(--accent);"></i> Dashboard Tiempo Real</h2>
+        <p class="text-muted mb-0">Flujo de datos en vivo de todos los sensores</p>
+    </div>
+    <span class="badge bg-success rounded-pill" style="font-size:0.85rem; padding:8px 16px;">
+        <span class="live-dot me-1"></span> EN VIVO
+    </span>
+    <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary ms-2"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--accent);">
+            <h2 style="color:var(--accent);">{{ stats.lecturas_ultima_hora }}</h2>
+            <p class="text-muted mb-0">Lecturas ultima hora</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--warning);">
+            <h2 style="color:var(--warning);">{{ stats.alertas_ultima_hora }}</h2>
+            <p class="text-muted mb-0">Alertas ultima hora</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--success);">
+            <h2 style="color:var(--success);">{{ stats.sensores_activos }}</h2>
+            <p class="text-muted mb-0">Sensores activos</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="glass-card">
+            <div class="p-3 d-flex justify-content-between align-items-center" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <h5 class="mb-0"><i class="bi bi-activity me-2" style="color:var(--accent);"></i>Flujo de Datos en Vivo</h5>
+                <span class="live-dot"></span>
+            </div>
+            <div style="max-height:500px; overflow-y:auto;" id="stream-container">
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="glass-card">
+            <div class="p-3" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <h5 class="mb-0"><i class="bi bi-graph-up me-2" style="color:var(--gold);"></i>Grafica en Vivo</h5>
+            </div>
+            <div class="p-3"><canvas id="liveChart" height="300"></canvas></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const datos = {{ datos_stream|safe }};
+const container = document.getElementById('stream-container');
+
+if (datos.length === 0) {
+    container.innerHTML = '<div class="p-4 text-center text-muted"><i class="bi bi-broadcast fs-1"></i><p>No hay datos recientes. Crea lecturas en tus sensores.</p></div>';
+} else {
+    datos.forEach((d, i) => {
+        const cls = d.es_alerta ? 'alerta' : 'ok';
+        const html = `<div class="stream-item ${cls}" style="animation-delay:${i * 0.03}s">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${d.sensor}</strong>
+                    <span class="badge rounded-pill ms-2" style="font-size:0.65rem; background:rgba(233,69,96,0.2); color:var(--accent);">${d.tipo}</span>
+                    <br><small class="text-muted">${d.edificio}</small>
+                </div>
+                <div class="text-end">
+                    <span class="fw-bold ${d.es_alerta ? 'text-danger' : ''}" style="font-size:1.1rem;">${d.valor} ${d.unidad}</span>
+                    <br><small class="text-muted">${d.fecha}</small>
+                </div>
+            </div>
+        </div>`;
+        container.innerHTML += html;
+    });
+}
+
+if (datos.length > 0) {
+    const chartCtx = document.getElementById('liveChart').getContext('2d');
+    const last30 = datos.slice(-30);
+    new Chart(chartCtx, {
+        type: 'line',
+        data: {
+            labels: last30.map(d => d.fecha.split(' ')[1] || d.fecha),
+            datasets: [{
+                label: 'Valores',
+                data: last30.map(d => d.valor),
+                borderColor: '#e94560',
+                backgroundColor: 'rgba(233,69,96,0.1)',
+                fill: true, tension: 0.4, pointRadius: 2, borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { display: false }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#999' } } }
+        }
+    });
+}
+</script>
+{% endblock %}

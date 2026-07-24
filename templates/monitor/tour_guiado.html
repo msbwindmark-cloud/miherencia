@@ -1,0 +1,211 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-tour@1.0.0/dist/css/bootstrap-tour-standalone.min.css">
+<style>
+.tour-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10040; }
+.tour-step {
+    position: fixed; z-index: 10050; background: #fff; border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.3); max-width: 380px; width: 90%;
+    overflow: hidden; animation: tourSlideIn 0.4s ease;
+}
+@keyframes tourSlideIn { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+.tour-step-header {
+    background: linear-gradient(135deg, #1a1a2e, #0f3460); color: #fff;
+    padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
+}
+.tour-step-header h5 { margin: 0; font-weight: 700; font-size: 1rem; }
+.tour-step-header .tour-step-num {
+    background: rgba(212,168,83,0.3); color: #d4a853; border-radius: 50%;
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.85rem;
+}
+.tour-step-body { padding: 20px; }
+.tour-step-body p { color: #555; font-size: 0.9rem; line-height: 1.6; margin-bottom: 16px; }
+.tour-step-footer { padding: 0 20px 16px; display: flex; gap: 8px; justify-content: flex-end; }
+.tour-step-footer button {
+    border: none; border-radius: 8px; padding: 8px 18px; font-weight: 600;
+    font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+}
+.tour-btn-skip { background: #f0f0f0; color: #666; }
+.tour-btn-skip:hover { background: #e0e0e0; }
+.tour-btn-next { background: linear-gradient(135deg, #e94560, #d4a853); color: #fff; }
+.tour-btn-next:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(233,69,96,0.3); }
+.tour-btn-prev { background: #f0f0f0; color: #333; }
+.tour-btn-prev:hover { background: #e0e0e0; }
+.tour-highlight { outline: 3px solid #d4a853; outline-offset: 4px; border-radius: 8px; transition: all 0.3s; }
+.tour-progress { height: 3px; background: #e9ecef; }
+.tour-progress-bar { height: 100%; background: linear-gradient(90deg, #e94560, #d4a853); transition: width 0.4s; }
+#tour-trigger-btn {
+    position: fixed; bottom: 24px; right: 24px; z-index: 10030;
+    background: linear-gradient(135deg, #e94560, #d4a853); color: #fff;
+    border: none; border-radius: 50px; padding: 12px 22px; font-weight: 700;
+    box-shadow: 0 4px 20px rgba(233,69,96,0.4); cursor: pointer;
+    display: flex; align-items: center; gap: 8px; transition: all 0.3s;
+    font-size: 0.85rem;
+}
+#tour-trigger-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 30px rgba(233,69,96,0.5); }
+</style>
+
+<div class="tour-backdrop" id="tourBackdrop" style="display:none;"></div>
+<div id="tourContainer"></div>
+
+<button id="tour-trigger-btn" onclick="startTour()">
+    <i class="bi bi-info-circle"></i> Tour Guiado
+</button>
+
+<script>
+const tourSteps = [
+    {
+        title: 'Bienvenido a SmartHeritage',
+        text: 'Esta aplicacion unica en el mundo monitoriza y preserva edificios historicos con IoT. Te guiaremos por todas las funcionalidades.',
+        icon: 'bi-building-columns',
+        position: 'center'
+    },
+    {
+        title: 'Widget Islámico',
+        text: 'En la parte superior veras la fecha Hijri, hora actual, temperatura y los horarios de Salat de tu ciudad. Se actualiza automaticamente.',
+        target: '.islamic-widget',
+        icon: 'bi-moon-stars',
+        position: 'bottom'
+    },
+    {
+        title: 'Estadisticas Principales',
+        text: 'Un vistazo rapido a tus edificios, sensores activos, alertas pendientes y lecturas del dia.',
+        target: '.stat-card',
+        icon: 'bi-graph-up',
+        position: 'bottom'
+    },
+    {
+        title: 'Acceso Rapido',
+        text: 'Desde aqui accedes al Mapa, Comparativa, Tiempo Real, Calendario, Logros y Equipos con un solo clic.',
+        target: '.row.g-3.mb-4.mt-4',
+        icon: 'bi-lightning',
+        position: 'bottom'
+    },
+    {
+        title: 'Edificios Patrimoniales',
+        text: 'Gestiona tus edificios historicos: crear, editar, ver sensores, alertas, informes y mucho mas.',
+        target: 'a[href*="edificio"]',
+        icon: 'bi-building',
+        position: 'bottom'
+    },
+    {
+        title: 'Mapa Global',
+        text: 'Visualiza todos tus edificios en un mapa interactivo con Leaflet. Ubicacion en tiempo real.',
+        target: 'a[href*="mapa"]',
+        icon: 'bi-geo-alt',
+        position: 'bottom'
+    },
+    {
+        title: 'Tiempo Real',
+        text: 'Dashboard con datos en vivo de todos tus sensores: temperatura, humedad, vibracion y mas.',
+        target: 'a[href*="tiempo"]',
+        icon: 'bi-broadcast',
+        position: 'bottom'
+    },
+    {
+        title: 'Alertas Inteligentes',
+        text: 'Sistema de alertas automaticas cuando un sensor detecta valores fuera de rango. Notificaciones y SMS.',
+        target: 'a[href*="alerta"]',
+        icon: 'bi-bell',
+        position: 'bottom'
+    },
+    {
+        title: 'Menu "Mas"',
+        text: 'Aqui encuentras Calendario, Gamificacion, Equipos, Mantenimientos, SMS/WhatsApp y el Audit Log completo.',
+        target: '.dropdown-toggle[href*="#"]',
+        icon: 'bi-list',
+        position: 'bottom'
+    },
+    {
+        title: 'Tour Completado!',
+        text: 'Ya conoces todas las funcionalidades de SmartHeritage. Explora自由mente y descubre todo lo que puedes hacer. Puedes volver a ejecutar este tour en cualquier momento.',
+        icon: 'bi-check-circle',
+        position: 'center'
+    }
+];
+
+let currentStep = 0;
+let highlightEl = null;
+
+function startTour() {
+    currentStep = 0;
+    document.getElementById('tourBackdrop').style.display = 'block';
+    document.getElementById('tour-trigger-btn').style.display = 'none';
+    showStep();
+}
+
+function endTour() {
+    document.getElementById('tourBackdrop').style.display = 'none';
+    document.getElementById('tourContainer').innerHTML = '';
+    document.getElementById('tour-trigger-btn').style.display = 'flex';
+    if (highlightEl) { highlightEl.classList.remove('tour-highlight'); highlightEl = null; }
+}
+
+function showStep() {
+    const step = tourSteps[currentStep];
+    const container = document.getElementById('tourContainer');
+    if (highlightEl) { highlightEl.classList.remove('tour-highlight'); highlightEl = null; }
+
+    let posX, posY;
+    if (step.position === 'center') {
+        posX = '50%'; posY = '50%';
+    } else {
+        const target = document.querySelector(step.target);
+        if (target) {
+            target.classList.add('tour-highlight');
+            highlightEl = target;
+            const rect = target.getBoundingClientRect();
+            if (step.position === 'bottom') {
+                posX = (rect.left + rect.width / 2) + 'px';
+                posY = (rect.bottom + 12) + 'px';
+            } else if (step.position === 'right') {
+                posX = (rect.right + 12) + 'px';
+                posY = (rect.top + rect.height / 2) + 'px';
+            } else {
+                posX = (rect.left + rect.width / 2) + 'px';
+                posY = (rect.top - 12) + 'px';
+            }
+        } else {
+            posX = '50%'; posY = '50%';
+        }
+    }
+
+    const progress = ((currentStep + 1) / tourSteps.length) * 100;
+    const isFirst = currentStep === 0;
+    const isLast = currentStep === tourSteps.length - 1;
+
+    container.innerHTML = `
+        <div class="tour-step" style="left:${posX};top:${posY};transform:translate(-50%,0);">
+            <div class="tour-progress"><div class="tour-progress-bar" style="width:${progress}%"></div></div>
+            <div class="tour-step-header">
+                <h5><i class="bi ${step.icon} me-2"></i>${step.title}</h5>
+                <div class="tour-step-num">${currentStep + 1}/${tourSteps.length}</div>
+            </div>
+            <div class="tour-step-body">
+                <p>${step.text}</p>
+            </div>
+            <div class="tour-step-footer">
+                <button class="tour-btn-skip" onclick="endTour()">Saltar Tour</button>
+                ${!isFirst ? '<button class="tour-btn-prev" onclick="prevStep()">Atras</button>' : ''}
+                <button class="tour-btn-next" onclick="${isLast ? 'endTour()' : 'nextStep()'}">
+                    ${isLast ? 'Finalizar' : 'Siguiente'} <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function nextStep() { currentStep++; showStep(); }
+function prevStep() { currentStep--; showStep(); }
+
+document.addEventListener('keydown', function(e) {
+    if (document.getElementById('tourBackdrop').style.display === 'block') {
+        if (e.key === 'Escape') endTour();
+        if (e.key === 'ArrowRight') nextStep();
+        if (e.key === 'ArrowLeft') prevStep();
+    }
+});
+
+if (!localStorage.getItem('smartheritage_tour_seen')) {
+    setTimeout(() => { startTour(); localStorage.setItem('smartheritage_tour_seen', '1'); }, 1500);
+}
+</script>

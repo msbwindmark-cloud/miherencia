@@ -1,0 +1,44 @@
+{
+    "name": "SmartHeritage - Patrimonio Historico",
+    "short_name": "SmartHeritage",
+    "description": "Aplicacion unica para monitorizacion y preservacion de edificios historicos",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f0f23",
+    "theme_color": "#1a1a2e",
+    "orientation": "any",
+    "scope": "/",
+    "lang": "es",
+    "icons": [
+        {
+            "src": "/static/img/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/static/img/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": ["education", "utilities"],
+    "shortcuts": [
+        {
+            "name": "Dashboard",
+            "url": "/",
+            "description": "Vista principal"
+        },
+        {
+            "name": "Mapa",
+            "url": "/mapa/",
+            "description": "Mapa global"
+        },
+        {
+            "name": "Alertas",
+            "url": "/alertas/",
+            "description": "Ver alertas activas"
+        }
+    ]
+}

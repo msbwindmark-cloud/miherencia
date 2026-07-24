@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Cumplimiento Legal - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-gavel"></i> Cumplimiento Legal</h1>
+                <p>Control de normativas y cumplimiento legal del patrimonio</p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if edificio %}
+                <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-accent me-2">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}info{% endif %} alert-custom alert-dismissible fade show">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>{{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if registros %}
+    <div class="card-custom">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Normativa</th>
+                            <th>Referencia</th>
+                            <th>Edificio</th>
+                            <th>Estado</th>
+                            <th>Última Inspección</th>
+                            <th>Próxima Inspección</th>
+                            <th>Responsable</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in registros %}
+                        <tr>
+                            <td class="fw-semibold">{{ r.normativa }}</td>
+                            <td>{{ r.referencia }}</td>
+                            <td>{{ r.edificio.nombre }}</td>
+                            <td>
+                                <span class="badge rounded-pill {% if r.estado == 'cumple' %}bg-success{% elif r.estado == 'no_cumple' %}bg-danger{% elif r.estado == 'en_proceso' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ r.get_estado_display }}
+                                </span>
+                            </td>
+                            <td>{{ r.fecha_inspeccion|date:"d/m/Y"|default:"-" }}</td>
+                            <td>
+                                {% if r.proxima_inspeccion %}
+                                    {% if r.proxima_inspeccion < today %}
+                                    <span class="text-danger fw-bold">{{ r.proxima_inspeccion|date:"d/m/Y" }}</span>
+                                    {% else %}
+                                    {{ r.proxima_inspeccion|date:"d/m/Y" }}
+                                    {% endif %}
+                                {% else %}-{% endif %}
+                            </td>
+                            <td>{{ r.responsable.username|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-gavel" style="color:var(--accent)"></i>
+        <h4>Sin registros legales</h4>
+        <p class="text-muted">Aún no se han registrado normativas de cumplimiento</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

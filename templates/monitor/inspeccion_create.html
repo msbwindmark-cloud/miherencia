@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Inspeccion - {{ edificio.nombre }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-clipboard-check"></i> Nueva Inspeccion</h2>
+    <a href="{% url 'monitor:inspeccion_list' edificio_pk=edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+<div class="glass-card p-4">
+    <form method="post" id="formInspeccion">
+        {% csrf_token %}
+        <div class="row g-3 mb-4">
+            <div class="col-md-6"><label class="form-label">Titulo de Inspeccion</label><input name="titulo" class="form-control form-control-dark" value="Inspeccion general" required></div>
+            <div class="col-md-3">
+                <label class="form-label">Resultado</label>
+                <select name="resultado" class="form-select form-select-dark">
+                    <option value="pendiente">Pendiente</option>
+                    <option value="aprobado">Aprobado</option>
+                    <option value="rechazado">Rechazado</option>
+                    <option value="con_observaciones">Con Observaciones</option>
+                </select>
+            </div>
+            <div class="col-md-3"><label class="form-label">Proxima inspeccion</label><input name="proxima_inspeccion" type="date" class="form-control form-control-dark"></div>
+        </div>
+        <h5 class="mb-3">Checklist de Inspeccion</h5>
+        <div class="row g-3 mb-4">
+            {% for item in checklist %}
+            <div class="col-md-6">
+                <div class="glass-card p-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check{{ forloop.counter }}" name="check_{{ forloop.counter }}">
+                        <label class="form-check-label" for="check{{ forloop.counter }}">{{ item.item }}</label>
+                    </div>
+                    <input name="nota_{{ forloop.counter }}" class="form-control form-control-dark mt-2" placeholder="Observaciones...">
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mb-3"><label class="form-label">Observaciones generales</label><textarea name="observaciones" class="form-control form-control-dark" rows="3"></textarea></div>
+        <div class="mb-4">
+            <label class="form-label"><i class="bi bi-pen"></i> Firma Digital del Inspector</label>
+            <div class="border rounded p-3" style="background:rgba(0,0,0,0.3);border-radius:12px !important;">
+                <div class="d-flex gap-2 mb-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="setFirmaColor('#d4a853')" title="Dorado"><span style="display:inline-block;width:14px;height:14px;background:#d4a853;border-radius:50%;"></span></button>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="setFirmaColor('#ffffff')" title="Blanco"><span style="display:inline-block;width:14px;height:14px;background:#ffffff;border-radius:50%;"></span></button>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="setFirmaColor('#e94560')" title="Rojo"><span style="display:inline-block;width:14px;height:14px;background:#e94560;border-radius:50%;"></span></button>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="setFirmaColor('#00d2ff')" title="Azul"><span style="display:inline-block;width:14px;height:14px;background:#00d2ff;border-radius:50%;"></span></button>
+                    <span class="text-muted" style="font-size:0.75rem;line-height:28px;">|</span>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="setFirmaWidth(2)" title="Fino">Fino</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="setFirmaWidth(4)" title="Medio">Medio</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="setFirmaWidth(7)" title="Grueso">Grueso</button>
+                </div>
+                <canvas id="firmaCanvas" width="500" height="180" style="width:100%; background:#0a0a0a; border-radius:8px; cursor:crosshair; touch-action:none;"></canvas>
+                <input type="hidden" name="firma_digital" id="firmaData">
+                <div class="mt-2 d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearFirma()"><i class="bi bi-eraser"></i> Limpiar</button>
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="undoFirma()"><i class="bi bi-arrow-counterclockwise"></i> Deshacer</button>
+                    <span id="firmaStatus" class="ms-auto" style="color:var(--text-muted);font-size:0.8rem;line-height:28px;"></span>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-accent btn-lg w-100"><i class="bi bi-check-circle"></i> Guardar Inspeccion</button>
+    </form>
+</div>
+<script>
+const canvas = document.getElementById('firmaCanvas');
+const ctx = canvas.getContext('2d');
+let drawing = false;
+let firmaColor = '#d4a853';
+let firmaWidth = 3;
+let firmaHistory = [];
+
+ctx.strokeStyle = firmaColor;
+ctx.lineWidth = firmaWidth;
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
+
+function setFirmaColor(c) { firmaColor = c; ctx.strokeStyle = c; }
+function setFirmaWidth(w) { firmaWidth = w; ctx.lineWidth = w; }
+
+function saveFirmaState() {
+    firmaHistory.push(canvas.toDataURL());
+    if (firmaHistory.length > 20) firmaHistory.shift();
+}
+
+function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    if (e.touches) {
+        return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+    }
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+}
+
+canvas.addEventListener('mousedown', e => { drawing = true; saveFirmaState(); const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+canvas.addEventListener('mousemove', e => { if (drawing) { const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); } });
+canvas.addEventListener('mouseup', () => { drawing = false; document.getElementById('firmaData').value = canvas.toDataURL(); updateStatus('Firma capturada'); });
+canvas.addEventListener('mouseleave', () => { if (drawing) { drawing = false; document.getElementById('firmaData').value = canvas.toDataURL(); } });
+
+canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; saveFirmaState(); const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+canvas.addEventListener('touchmove', e => { e.preventDefault(); if (drawing) { const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); } });
+canvas.addEventListener('touchend', e => { e.preventDefault(); drawing = false; document.getElementById('firmaData').value = canvas.toDataURL(); updateStatus('Firma capturada'); });
+
+function clearFirma() { ctx.clearRect(0, 0, canvas.width, canvas.height); document.getElementById('firmaData').value = ''; firmaHistory = []; updateStatus('Firma borrada'); }
+function undoFirma() {
+    if (firmaHistory.length > 0) {
+        const img = new Image();
+        img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); document.getElementById('firmaData').value = canvas.toDataURL(); updateStatus('Deshacer'); };
+        img.src = firmaHistory.pop();
+    }
+}
+function updateStatus(msg) { document.getElementById('firmaStatus').textContent = msg; setTimeout(() => { document.getElementById('firmaStatus').textContent = ''; }, 3000); }
+document.getElementById('formInspeccion').addEventListener('submit', () => { document.getElementById('firmaData').value = canvas.toDataURL(); });
+</script>
+{% endblock %}

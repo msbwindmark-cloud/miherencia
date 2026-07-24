@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Asignar Permisos{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <h2 style="color:var(--gold);"><i class="bi bi-person-plus"></i> Asignar Permisos</h2>
+        <div class="card glass-card border-0">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Usuario</label>
+                        <select name="usuario" class="form-select" required>{% for u in usuarios %}<option value="{{ u.pk }}">{{ u.get_full_name|default:u.username }}</option>{% endfor %}</select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rol</label>
+                        <select name="rol" class="form-select"><option value="">Sin rol</option>{% for r in roles %}<option value="{{ r.pk }}">{{ r.nombre }}</option>{% endfor %}</select>
+                    </div>
+                    <h6 style="color:var(--gold);">Notificaciones:</h6>
+                    <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="notificaciones_email" checked><label class="form-check-label">Email</label></div>
+                    <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="notificaciones_push" checked><label class="form-check-label">Push</label></div>
+                    <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="notificaciones_whatsapp"><label class="form-check-label">WhatsApp</label></div>
+                    <button type="submit" class="btn btn-accent w-100 mt-3"><i class="bi bi-check-circle"></i> Guardar Permisos</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

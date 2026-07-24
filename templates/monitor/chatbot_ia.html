@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Chatbot IA - SmartHeritage{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-robot"></i> Chatbot IA</h1>
+                <p>Asistente inteligente para consultas sobre edificios patrimoniales</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-accent">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container fade-in">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-custom">
+                <div class="card-header d-flex align-items-center" style="background:var(--accent);color:#fff;border-radius:0.5rem 0.5rem 0 0;">
+                    <i class="bi bi-robot me-2 fs-4"></i>
+                    <span class="fw-bold fs-5">SmartHeritage Bot</span>
+                    <span class="ms-auto badge bg-success">En linea</span>
+                </div>
+                <div id="chatMessages" class="card-body p-3" style="height:450px;overflow-y:auto;background:var(--dark-bg,#1a1a2e);">
+                    <div class="d-flex mb-3">
+                        <div class="rounded-pill px-3 py-2" style="background:var(--accent2,#2d2d44);color:#e0e0e0;max-width:75%;">
+                            <small class="d-block fw-bold mb-1" style="color:var(--accent);">Bot</small>
+                            Hola, soy el asistente de SmartHeritage. Preguntame sobre eficiencia energetica, seguros, legal o cualquier tema relacionado con tus edificios.
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer" style="background:var(--dark-bg,#1a1a2e);border-top:1px solid rgba(255,255,255,0.1);">
+                    <form id="chatForm" class="d-flex gap-2">
+                        <input type="text" id="chatInput" class="form-control" placeholder="Escribe tu mensaje..." autocomplete="off" style="background:var(--accent2,#2d2d44);border:1px solid rgba(255,255,255,0.1);color:#fff;">
+                        <button type="submit" class="btn btn-accent" id="chatSendBtn">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatSendBtn = document.getElementById('chatSendBtn');
+
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const msg = chatInput.value.trim();
+        if (!msg) return;
+        appendMessage('Tú', msg, true);
+        chatInput.value = '';
+        chatSendBtn.disabled = true;
+        fetch('{% url "monitor:chatbot_ia" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ message: msg })
+        })
+        .then(res => res.json())
+        .then(data => {
+            appendMessage('Bot', data.response || data.message || 'Sin respuesta', false);
+            chatSendBtn.disabled = false;
+            chatInput.focus();
+        })
+        .catch(() => {
+            appendMessage('Bot', 'Error al conectar con el servidor. Intente de nuevo.', false);
+            chatSendBtn.disabled = false;
+        });
+    });
+
+    function appendMessage(sender, text, isUser) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'd-flex mb-3 ' + (isUser ? 'justify-content-end' : 'justify-content-start');
+        const bubble = document.createElement('div');
+        bubble.className = 'rounded-pill px-3 py-2';
+        bubble.style.maxWidth = '75%';
+        if (isUser) {
+            bubble.style.background = 'var(--accent)';
+            bubble.style.color = '#fff';
+        } else {
+            bubble.style.background = 'var(--accent2,#2d2d44)';
+            bubble.style.color = '#e0e0e0';
+        }
+        const label = document.createElement('small');
+        label.className = 'd-block fw-bold mb-1';
+        label.style.color = isUser ? '#fff' : 'var(--accent)';
+        label.textContent = sender;
+        bubble.appendChild(label);
+        bubble.appendChild(document.createTextNode(text));
+        wrapper.appendChild(bubble);
+        chatMessages.appendChild(wrapper);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+});
+</script>
+{% endblock %}
