@@ -706,6 +706,8 @@
     </script>
     {% endif %}
 
-    {% include 'monitor/tour_guiado.html' %}
+    {% if user.is_authenticated %}
+        {% include 'monitor/tour_guiado.html' %}
+    {% endif %}
 </body>
 </html>

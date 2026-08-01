@@ -58,6 +58,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.media',
                 'monitor.context_processors.IslamicWidgetContext',
+                'monitor.context_processors.show_tour_context',
             ],
         },
     },

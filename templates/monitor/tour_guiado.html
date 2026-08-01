@@ -205,7 +205,7 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-if (!localStorage.getItem('smartheritage_tour_seen')) {
-    setTimeout(() => { startTour(); localStorage.setItem('smartheritage_tour_seen', '1'); }, 1500);
-}
+{% if show_tour %}
+setTimeout(() => { startTour(); }, 1500);
+{% endif %}
 </script>

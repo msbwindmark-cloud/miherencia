@@ -155,6 +155,11 @@ def get_weather(city='Madrid', lat=None, lng=None):
     return None
 
 
+def show_tour_context(request):
+    show_tour = request.session.pop('smartheritage_tour_pending', False)
+    return {'show_tour': show_tour}
+
+
 def IslamicWidgetContext(request):
     context = {}
 

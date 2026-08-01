@@ -150,6 +150,7 @@ def login_view(request):
                     logout(request)
                     return redirect('monitor:mfa_verify')
 
+                request.session['smartheritage_tour_pending'] = True
                 messages.success(request, f'Bienvenido, {user.get_full_name() or user.username}!')
                 return redirect('monitor:dashboard')
             else:
@@ -179,6 +180,7 @@ def register_view(request):
             ip = request.META.get('REMOTE_ADDR')
             AuditLog.registrar(user, 'crear', 'Usuario', user.pk, f'Nueva cuenta creada: {user.username}', ip=ip)
             login(request, user)
+            request.session['smartheritage_tour_pending'] = True
             return redirect('monitor:dashboard')
         else:
             messages.error(request, 'Por favor, corrige los errores del formulario.')
@@ -309,6 +311,7 @@ def mfa_verify_view(request):
             del request.session['mfa_pendiente']
             del request.session['mfa_user_id']
             login(request, user)
+            request.session['smartheritage_tour_pending'] = True
             messages.success(request, f'Bienvenido, {user.get_full_name() or user.username}!')
             return redirect('monitor:dashboard')
         else:
