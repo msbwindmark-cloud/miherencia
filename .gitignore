@@ -15,9 +15,6 @@ venv/
 # Database
 db.sqlite3
 
-# Media (user uploads)
-media/
-
 # Static files (collected)
 staticfiles/
 
