@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'livereload',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'rest_framework',
@@ -40,6 +41,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'monitor.middleware.AuditMiddleware',
+    'smart_heritage.middleware.LocalhostLiveReloadScript',
 ]
 
 ROOT_URLCONF = 'smart_heritage.urls'

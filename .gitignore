@@ -8,7 +8,7 @@ build/
 *.egg
 
 # Environment
-.env
+
 .venv/
 venv/
 
