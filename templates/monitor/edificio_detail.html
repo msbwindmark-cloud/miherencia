@@ -123,7 +123,7 @@
                 <div class="card-header">
                     <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2" style="color:var(--accent2)"></i>Información</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body" style="padding:1.5rem;">
                     <ul class="list-unstyled mb-0">
                         <li class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">Categoría:</span><strong>{{ edificio.get_categoria_display }}</strong></li>
                         <li class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">Estado:</span><span class="badge-heritage badge-{{ edificio.estado_general }}">{{ edificio.get_estado_general_display }}</span></li>
@@ -138,7 +138,7 @@
                 <div class="card-header">
                     <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark me-2" style="color:var(--accent)"></i>Informes y Exportar</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body" style="padding:1.5rem;">
                     <a href="{% url 'monitor:informe_create' edificio_pk=edificio.pk %}" class="btn btn-accent w-100 mb-2"><i class="bi bi-file-earmark-text me-2"></i>Generar Informe</a>
                     <a href="{% url 'monitor:generar_pdf' pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-file-earmark-pdf me-2"></i>Descargar PDF</a>
                     <a href="{% url 'monitor:generar_qr' pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-qr-code me-2"></i>Generar QR</a>
@@ -152,7 +152,7 @@
                 <div class="card-header">
                     <h5 class="mb-0 fw-bold"><i class="bi bi-lightning me-2" style="color:var(--warning)"></i>Acciones Rápidas</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body" style="padding:1.5rem;">
                     <a href="{% url 'monitor:chat_view' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-chat-dots me-2"></i>Chat del Equipo</a>
                     <a href="{% url 'monitor:timeline_view' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-camera-reels me-2"></i>Timeline Fotográfico</a>
                     <a href="{% url 'monitor:mantenimiento_create' edificio_pk=edificio.pk %}" class="btn btn-outline-accent w-100 mb-2"><i class="bi bi-tools me-2"></i>Nuevo Mantenimiento</a>
@@ -220,9 +220,18 @@ function crearGrafica(tipo) {
     const ctx = document.getElementById('mainChart').getContext('2d');
     if (mainChart) mainChart.destroy();
     const datos = chartData[tipo] || [];
+    if (datos.length === 0) {
+        mainChart = null;
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.font = '14px Inter, sans-serif';
+        ctx.fillStyle = '#6c757d';
+        ctx.textAlign = 'center';
+        ctx.fillText('Sin lecturas en los ultimos 7 dias', ctx.canvas.width / 2, ctx.canvas.height / 2);
+        return;
+    }
     const labels = datos.map(d => d.x);
     const config = {
-        temperaura: { data: datos.map(d => d.avg), label: 'Temperatura (°C)', borderColor: '#e94560', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+        temperatura: { data: datos.map(d => d.avg), label: 'Temperatura (°C)', borderColor: '#e94560', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
         humedad: { data: datos.map(d => d.avg), label: 'Humedad (%)', borderColor: '#3498db', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
         vibracion: { data: datos.map(d => d.avg), label: 'Vibración', borderColor: '#f39c12', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
     };
@@ -243,7 +252,9 @@ function crearGrafica(tipo) {
     });
 }
 function mostrarGrafica(tipo) { crearGrafica(tipo); }
-crearGrafica('temperaura');
+const tiposOrden = ['temperatura', 'humedad', 'vibracion'];
+const tipoInicial = tiposOrden.find(t => (chartData[t] || []).length > 0) || 'temperatura';
+crearGrafica(tipoInicial);
 
 function confirmarEliminar(url) {
     Swal.fire({

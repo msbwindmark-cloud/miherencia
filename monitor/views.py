@@ -407,6 +407,13 @@ def edificio_detail(request, pk):
         sensor__edificio=edificio,
         fecha_hora__gte=timezone.now() - timedelta(days=7)
     )
+    if not lecturas_7d.exists():
+        ultima = Lectura.objects.filter(sensor__edificio=edificio).order_by('-fecha_hora').first()
+        if ultima:
+            lecturas_7d = Lectura.objects.filter(
+                sensor__edificio=edificio,
+                fecha_hora__gte=ultima.fecha_hora - timedelta(days=7)
+            )
 
     datos_temp = lecturas_7d.filter(sensor__tipo='temperatura').values('fecha_hora').annotate(
         avg=Avg('valor'), maximo=Max('valor'), minimo=Min('valor')

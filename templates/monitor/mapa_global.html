@@ -13,7 +13,7 @@
 const map = L.map('mapa').setView([37.3891, -5.9845], 6);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: '&copy; OpenStreetMap'}).addTo(map);
 const markers = [{% for m in markers %}{
-    lat: {{ m.lat }}, lng: {{ m.lng }}, nombre: '{{ m.nombre }}', salud: {{ m.salud }}, pk: '{{ m.pk }}'
+    lat: {{ m.lat|floatformat:"-6u" }}, lng: {{ m.lng|floatformat:"-6u" }}, nombre: '{{ m.nombre|escapejs }}', salud: {{ m.salud|floatformat:"0u" }}, pk: '{{ m.pk }}'
 },{% endfor %}];
 markers.forEach(m => {
     const color = m.salud >= 75 ? '#28a745' : m.salud >= 50 ? '#ffc107' : '#dc3545';
