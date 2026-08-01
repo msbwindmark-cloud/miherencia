@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="{{ idioma_activo|default:'es' }}" data-bs-theme="light">
+<html lang="{{ idioma_activo|default:'es' }}" dir="{% if idioma_activo == 'ar' %}rtl{% else %}ltr{% endif %}" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -98,11 +98,31 @@
             transition: all 0.3s ease;
         }
 
-        .navbar-custom .nav-link:hover,
-        .navbar-custom .nav-link.active {
-            color: white !important;
-            background: rgba(255,255,255,0.1);
+         .navbar-custom .nav-link:hover,
+         .navbar-custom .nav-link.active {
+             color: white !important;
+             background: rgba(255,255,255,0.1);
+         }
+
+        html[dir="rtl"] body {
+            text-align: right;
         }
+        html[dir="rtl"] .me-2 {
+            margin-left: 0 !important;
+            margin-right: 0.5rem !important;
+        }
+        html[dir="rtl"] .dropdown-menu-end {
+            text-align: right;
+        }
+        html[dir="rtl"] .d-flex.just-content-between,
+        html[dir="rtl"] .container,
+        html[dir="rtl"] .row {
+            text-align: right;
+        }
+        html[dir="rtl"] .form-control {
+            text-align: right;
+        }
+
 
         .btn-accent {
             background: var(--gradient-accent);
@@ -418,72 +438,72 @@
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-gear"></i> {{ textos.nav_mas|default:"Más" }}
                         </a>
-                        <ul class="dropdown-menu shadow">
-                            <li><a class="dropdown-item" href="{% url 'monitor:calendario' %}"><i class="bi bi-calendar3 me-2"></i>Calendario</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:gamificacion' %}"><i class="bi bi-trophy me-2"></i>Gamificacion</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:equipo_list' %}"><i class="bi bi-people me-2"></i>Equipos</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:mantenimiento_list' %}"><i class="bi bi-tools me-2"></i>Mantenimientos</a></li>
+                         <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="{% url 'monitor:calendario' %}"><i class="bi bi-calendar3 me-2"></i>{{ textos.menu_calendario|default:"Calendario" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:gamificacion' %}"><i class="bi bi-trophy me-2"></i>{{ textos.menu_gamificacion|default:"Gamificacion" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:equipo_list' %}"><i class="bi bi-people me-2"></i>{{ textos.menu_equipos|default:"Equipos" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:mantenimiento_list' %}"><i class="bi bi-tools me-2"></i>{{ textos.menu_mantenimientos|default:"Mantenimientos" }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:chatbot_ia' %}"><i class="bi bi-robot me-2"></i>Chatbot IA</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:galeria_list' %}"><i class="bi bi-images me-2"></i>Galeria Antes/Despues</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:ranking_global' %}"><i class="bi bi-trophy me-2"></i>Ranking Global</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_energia' %}"><i class="bi bi-lightning-charge me-2"></i>Dashboard Energia</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_seguros' %}"><i class="bi bi-shield-check me-2"></i>Dashboard Seguros</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_legal' %}"><i class="bi bi-bank me-2"></i>Dashboard Legal</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:mapa_reportes' %}"><i class="bi bi-flag me-2"></i>Mapa Reportes</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:chatbot_ia' %}"><i class="bi bi-robot me-2"></i>{{ textos.menu_chatbot|default:"Chatbot IA" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:galeria_list' %}"><i class="bi bi-images me-2"></i>{{ textos.menu_galeria|default:"Galeria Antes/Despues" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:ranking_global' %}"><i class="bi bi-trophy me-2"></i>{{ textos.menu_ranking|default:"Ranking Global" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_energia' %}"><i class="bi bi-lightning-charge me-2"></i>{{ textos.menu_dashboard_energia|default:"Dashboard Energia" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_seguros' %}"><i class="bi bi-shield-check me-2"></i>{{ textos.menu_dashboard_seguros|default:"Dashboard Seguros" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_legal' %}"><i class="bi bi-bank me-2"></i>{{ textos.menu_dashboard_legal|default:"Dashboard Legal" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:mapa_reportes' %}"><i class="bi bi-flag me-2"></i>{{ textos.menu_mapa_reportes|default:"Mapa Reportes" }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:analisis_ia_list' %}"><i class="bi bi-robot me-2"></i>Analisis IA</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:predicciones_list' %}"><i class="bi bi-cpu me-2"></i>Predicciones ML</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:donacion_list' %}"><i class="bi bi-heart me-2"></i>Donaciones</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:reporte_ciudadano_list' %}"><i class="bi bi-flag me-2"></i>Reportes Ciudadanos</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:seguro_list' %}"><i class="bi bi-shield-check me-2"></i>Seguros</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:eficiencia_energetica_list' %}"><i class="bi bi-lightning-charge me-2"></i>Energia</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:cumplimiento_legal_list' %}"><i class="bi bi-bank me-2"></i>Cumplimiento Legal</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:certificado_blockchain_list' %}"><i class="bi bi-link-45deg me-2"></i>Blockchain</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:tour_virtual_list' %}"><i class="bi bi-badge-3d me-2"></i>Tours Virtuales</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:evento_list' %}"><i class="bi bi-calendar-event me-2"></i>Eventos</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:tienda_list' %}"><i class="bi bi-shop me-2"></i>Tienda</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:analisis_ia_list' %}"><i class="bi bi-robot me-2"></i>{{ textos.menu_analisis_ia|default:"Analisis IA" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:predicciones_list' %}"><i class="bi bi-cpu me-2"></i>{{ textos.menu_predicciones|default:"Predicciones ML" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:donacion_list' %}"><i class="bi bi-heart me-2"></i>{{ textos.menu_donaciones|default:"Donaciones" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:reporte_ciudadano_list' %}"><i class="bi bi-flag me-2"></i>{{ textos.menu_reportes_ciudadanos|default:"Reportes Ciudadanos" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:seguro_list' %}"><i class="bi bi-shield-check me-2"></i>{{ textos.menu_seguros|default:"Seguros" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:eficiencia_energetica_list' %}"><i class="bi bi-lightning-charge me-2"></i>{{ textos.menu_energia|default:"Energia" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:cumplimiento_legal_list' %}"><i class="bi bi-bank me-2"></i>{{ textos.menu_cumplimiento_legal|default:"Cumplimiento Legal" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:certificado_blockchain_list' %}"><i class="bi bi-link-45deg me-2"></i>{{ textos.menu_blockchain|default:"Blockchain" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:tour_virtual_list' %}"><i class="bi bi-badge-3d me-2"></i>{{ textos.menu_tours_virtuales|default:"Tours Virtuales" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:evento_list' %}"><i class="bi bi-calendar-event me-2"></i>{{ textos.menu_eventos|default:"Eventos" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:tienda_list' %}"><i class="bi bi-shop me-2"></i>{{ textos.menu_tienda|default:"Tienda" }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:tareas_pendientes' %}"><i class="bi bi-list-check me-2"></i>Tareas Pendientes</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_inversores' %}"><i class="bi bi-graph-up-arrow me-2"></i>Dashboard Inversores</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:comparativa_periodos' %}"><i class="bi bi-arrow-left-right me-2"></i>Comparativa Periodos</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:configurar_email' %}"><i class="bi bi-envelope me-2"></i>Configurar Email</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:tareas_pendientes' %}"><i class="bi bi-list-check me-2"></i>{{ textos.menu_tareas_pendientes|default:"Tareas Pendientes" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:dashboard_inversores' %}"><i class="bi bi-graph-up-arrow me-2"></i>{{ textos.menu_dashboard_inversores|default:"Dashboard Inversores" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:comparativa_periodos' %}"><i class="bi bi-arrow-left-right me-2"></i>{{ textos.menu_comparativa_periodos|default:"Comparativa Periodos" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:configurar_email' %}"><i class="bi bi-envelope me-2"></i>{{ textos.menu_configurar_email|default:"Configurar Email" }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:anomalias_list' %}"><i class="bi bi-exclamation-triangle me-2"></i>Anomalias IA</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:herramienta_list' %}"><i class="bi bi-tools me-2"></i>Herramientas</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:portal_educativo' %}"><i class="bi bi-mortarboard me-2"></i>Portal Educativo</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:voluntarios_list' %}"><i class="bi bi-people me-2"></i>Voluntarios</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:anomalias_list' %}"><i class="bi bi-exclamation-triangle me-2"></i>{{ textos.menu_anomalias_ia|default:"Anomalias IA" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:herramienta_list' %}"><i class="bi bi-tools me-2"></i>{{ textos.menu_herramientas|default:"Herramientas" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:portal_educativo' %}"><i class="bi bi-mortarboard me-2"></i>{{ textos.menu_portal_educativo|default:"Portal Educativo" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:voluntarios_list' %}"><i class="bi bi-people me-2"></i>{{ textos.menu_voluntarios|default:"Voluntarios" }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:reportes_automaticos' %}"><i class="bi bi-file-earmark-bar-graph me-2"></i>Reportes Automaticos</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:mantenimiento_predictivo' %}"><i class="bi bi-cpu me-2"></i>Mantenimiento Predictivo</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:comparativa_ciudades' %}"><i class="bi bi-geo-alt me-2"></i>Comparativa Ciudades</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:resumen_diario' %}"><i class="bi bi-envelope-check me-2"></i>Enviar Resumen Diario</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:reportes_automaticos' %}"><i class="bi bi-file-earmark-bar-graph me-2"></i>{{ textos.menu_reportes_automaticos|default:"Reportes Automaticos" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:mantenimiento_predictivo' %}"><i class="bi bi-cpu me-2"></i>{{ textos.menu_mantenimiento_predictivo|default:"Mantenimiento Predictivo" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:comparativa_ciudades' %}"><i class="bi bi-geo-alt me-2"></i>{{ textos.menu_comparativa_ciudades|default:"Comparativa Ciudades" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:resumen_diario' %}"><i class="bi bi-envelope-check me-2"></i>{{ textos.menu_resumen_diario|default:"Enviar Resumen Diario" }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:panel_financiero' %}"><i class="bi bi-cash-stack me-2"></i>Panel Financiero</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:ingreso_list' %}"><i class="bi bi-plus-circle me-2"></i>Ingresos</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:gasto_list' %}"><i class="bi bi-dash-circle me-2"></i>Gastos</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:factura_list' %}"><i class="bi bi-receipt me-2"></i>Facturas</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:nomina_list' %}"><i class="bi bi-people me-2"></i>Nominas</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:presupuesto_list' %}"><i class="bi bi-wallet2 me-2"></i>Presupuestos</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:cuenta_contable_list' %}"><i class="bi bi-journal-ledger me-2"></i>Cuentas Contables</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:panel_financiero' %}"><i class="bi bi-cash-stack me-2"></i>{{ textos.menu_panel_financiero|default:"Panel Financiero" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:ingreso_list' %}"><i class="bi bi-plus-circle me-2"></i>{{ textos.menu_ingresos|default:"Ingresos" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:gasto_list' %}"><i class="bi bi-dash-circle me-2"></i>{{ textos.menu_gastos|default:"Gastos" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:factura_list' %}"><i class="bi bi-receipt me-2"></i>{{ textos.menu_facturas|default:"Facturas" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:nomina_list' %}"><i class="bi bi-people me-2"></i>{{ textos.menu_nominas|default:"Nominas" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:presupuesto_list' %}"><i class="bi bi-wallet2 me-2"></i>{{ textos.menu_presupuestos|default:"Presupuestos" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:cuenta_contable_list' %}"><i class="bi bi-journal-ledger me-2"></i>{{ textos.menu_cuentas_contables|default:"Cuentas Contables" }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:notificaciones_push' %}"><i class="bi bi-bell me-2"></i>Notificaciones Push</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:backup_detail' %}"><i class="bi bi-download me-2"></i>Backup</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:sms_config' %}"><i class="bi bi-phone me-2"></i>SMS/WhatsApp</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:audit_log' %}"><i class="bi bi-journal-text me-2"></i>Audit Log</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:notificaciones_push' %}"><i class="bi bi-bell me-2"></i>{{ textos.menu_notificaciones_push|default:"Notificaciones Push" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:backup_detail' %}"><i class="bi bi-download me-2"></i>{{ textos.menu_backup|default:"Backup" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:sms_config' %}"><i class="bi bi-phone me-2"></i>{{ textos.menu_sms|default:"SMS/WhatsApp" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:audit_log' %}"><i class="bi bi-journal-text me-2"></i>{{ textos.menu_audit_log|default:"Audit Log" }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:chat_asistente_ia' %}"><i class="bi bi-robot me-2"></i>Asistente IA</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:kanban' %}"><i class="bi bi-kanban me-2"></i>Kanban Tareas</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:mapa_global' %}"><i class="bi bi-globe me-2"></i>Mapa Global</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:cita_list' %}"><i class="bi bi-calendar-check me-2"></i>Citas</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:foto_inspeccion_list' %}"><i class="bi bi-camera me-2"></i>Fotos IA</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:contrato_list' %}"><i class="bi bi-file-earmark-text me-2"></i>Contratos</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:inventario_list' %}"><i class="bi bi-box-seam me-2"></i>Inventario</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:bitacora_list' %}"><i class="bi bi-journal-text me-2"></i>Bitacora Obras</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:whatsapp_config' %}"><i class="bi bi-whatsapp me-2"></i>WhatsApp</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:chat_asistente_ia' %}"><i class="bi bi-robot me-2"></i>{{ textos.menu_asistente_ia|default:"Asistente IA" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:kanban' %}"><i class="bi bi-kanban me-2"></i>{{ textos.menu_kanban|default:"Kanban Tareas" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:mapa_global' %}"><i class="bi bi-globe me-2"></i>{{ textos.menu_mapa_global|default:"Mapa Global" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:cita_list' %}"><i class="bi bi-calendar-check me-2"></i>{{ textos.menu_citas|default:"Citas" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:foto_inspeccion_list' %}"><i class="bi bi-camera me-2"></i>{{ textos.menu_fotos_ia|default:"Fotos IA" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:contrato_list' %}"><i class="bi bi-file-earmark-text me-2"></i>{{ textos.menu_contratos|default:"Contratos" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:inventario_list' %}"><i class="bi bi-box-seam me-2"></i>{{ textos.menu_inventario|default:"Inventario" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:bitacora_list' %}"><i class="bi bi-journal-text me-2"></i>{{ textos.menu_bitacora|default:"Bitacora Obras" }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:whatsapp_config' %}"><i class="bi bi-whatsapp me-2"></i>{{ textos.menu_whatsapp|default:"WhatsApp" }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/swagger/" target="_blank"><i class="bi bi-code-slash me-2"></i>Swagger API Docs</a></li>
-                            <li><a class="dropdown-item" href="/redoc/" target="_blank"><i class="bi bi-file-earmark-text me-2"></i>ReDoc API</a></li>
+                            <li><a class="dropdown-item" href="/swagger/" target="_blank"><i class="bi bi-code-slash me-2"></i>{{ textos.menu_swagger|default:"Swagger API Docs" }}</a></li>
+                            <li><a class="dropdown-item" href="/redoc/" target="_blank"><i class="bi bi-file-earmark-text me-2"></i>{{ textos.menu_redoc|default:"ReDoc API" }}</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -499,7 +519,7 @@
                     {% if prayer_times.fajr != '--:--' %}
                     <li class="nav-item d-none d-xl-flex align-items-center me-2" style="border-right:1px solid rgba(255,255,255,0.15);padding-right:12px;">
                         <div class="text-end" style="line-height:1.2;">
-                            <div style="font-size:0.65rem;color:rgba(255,255,255,0.5);letter-spacing:0.5px;">PROXIMA SALAT</div>
+                             <div style="font-size:0.65rem;color:rgba(255,255,255,0.5);letter-spacing:0.5px;">{{ textos.nav_proxima_salat|default:"PROXIMA SALAT" }}</div>
                             <div style="font-size:0.75rem;color:#fff;font-weight:700;">{{ prayer_times.next_prayer_name }} {{ prayer_times.next_prayer_time }}</div>
                         </div>
                     </li>
