@@ -1,10 +1,9 @@
-const CACHE_NAME = 'smartheritage-v2';
+const CACHE_NAME = 'smartheritage-v3';
 const urlsToCache = [
     '/',
     '/static/manifest.json',
-    '/edificios/',
-    '/alertas/',
-    '/mapa/',
+    '/static/img/icon-512.png',
+    '/static/img/icon-192.png',
 ];
 
 self.addEventListener('install', function(event) {
@@ -18,17 +17,40 @@ self.addEventListener('install', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
+    var request = event.request;
+    if (request.method !== 'GET') return;
+
+    var isPage = request.mode === 'navigate';
+    var isStatic = request.url.indexOf('/static/') !== -1;
+
+    if (isPage) {
+        event.respondWith(
+            fetch(request)
+                .then(function(networkResponse) {
+                    var responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then(function(cache) {
+                        cache.put(request, responseToCache);
+                    });
+                    return networkResponse;
+                })
+                .catch(function() {
+                    return caches.match(request).then(function(cached) {
+                        return cached || caches.match('/');
+                    });
+                })
+        );
+        return;
+    }
+
     event.respondWith(
-        caches.match(event.request)
+        caches.match(request)
             .then(function(response) {
-                if (response) {
-                    return response;
-                }
-                return fetch(event.request).then(function(networkResponse) {
-                    if (networkResponse && networkResponse.status === 200) {
+                if (response) return response;
+                return fetch(request).then(function(networkResponse) {
+                    if (isStatic && networkResponse && networkResponse.status === 200) {
                         var responseToCache = networkResponse.clone();
                         caches.open(CACHE_NAME).then(function(cache) {
-                            cache.put(event.request, responseToCache);
+                            cache.put(request, responseToCache);
                         });
                     }
                     return networkResponse;

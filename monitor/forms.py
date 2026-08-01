@@ -194,7 +194,7 @@ class TimelineFotoForm(forms.ModelForm):
             'imagen': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'titulo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Título de la foto'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Descripción...'}),
-            'fecha_toma': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_toma': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'latitud': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '40.4168'}),
             'longitud': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '-3.7038'}),
         }
