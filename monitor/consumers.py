@@ -44,7 +44,7 @@ class AlertaConsumer(AsyncWebsocketConsumer):
             'sensor': a.sensor.nombre,
             'edificio': a.sensor.edificio.nombre,
             'mensaje': a.mensaje,
-            'nivel': a.nivel,
+            'severidad': a.severidad,
             'fecha': a.fecha_creacion.isoformat(),
         } for a in alertas]
 

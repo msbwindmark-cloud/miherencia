@@ -1,8 +1,10 @@
-const CACHE_NAME = 'smartheritage-v1';
+const CACHE_NAME = 'smartheritage-v2';
 const urlsToCache = [
     '/',
-    '/static/css/custom.css',
     '/static/manifest.json',
+    '/edificios/',
+    '/alertas/',
+    '/mapa/',
 ];
 
 self.addEventListener('install', function(event) {
@@ -12,6 +14,7 @@ self.addEventListener('install', function(event) {
                 return cache.addAll(urlsToCache);
             })
     );
+    self.skipWaiting();
 });
 
 self.addEventListener('fetch', function(event) {
@@ -21,7 +24,15 @@ self.addEventListener('fetch', function(event) {
                 if (response) {
                     return response;
                 }
-                return fetch(event.request);
+                return fetch(event.request).then(function(networkResponse) {
+                    if (networkResponse && networkResponse.status === 200) {
+                        var responseToCache = networkResponse.clone();
+                        caches.open(CACHE_NAME).then(function(cache) {
+                            cache.put(event.request, responseToCache);
+                        });
+                    }
+                    return networkResponse;
+                });
             })
     );
 });
@@ -37,5 +48,26 @@ self.addEventListener('activate', function(event) {
                 })
             );
         })
+    );
+    self.clients.claim();
+});
+
+self.addEventListener('push', function(event) {
+    var data = event.data ? event.data.json() : { title: 'SmartHeritage', body: 'Nueva notificacion' };
+    event.waitUntil(
+        self.registration.showNotification(data.title, {
+            body: data.body,
+            icon: '/static/img/icon-192.png',
+            badge: '/static/img/icon-192.png',
+            vibrate: [200, 100, 200],
+            data: { url: data.url || '/' }
+        })
+    );
+});
+
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    event.waitUntil(
+        clients.openWindow(event.notification.data.url)
     );
 });

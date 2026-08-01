@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% block title %}{% if editing %}Editar{% else %}Crear{% endif %} Cotización - SmartHeritage{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">
+                <i class="bi bi-{% if editing %}pencil-square{% else %}plus-circle{% endif %} me-2" style="color:var(--accent)"></i>
+                {% if editing %}Editar Cotización{% else %}Nueva Cotización{% endif %}
+            </h2>
+        </div>
+        <a href="{% url 'monitor:cotizacion_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+    </div>
+
+    <form method="post" id="cotizacionForm">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card-custom p-4 mb-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-person me-2"></i>Datos del Cliente</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Nombre del cliente *</label>
+                            <input type="text" name="cliente_nombre" class="form-control" required
+                                   value="{% if editing %}{{ cotizacion.cliente_nombre }}{% endif %}"
+                                   placeholder="Nombre completo">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Email del cliente *</label>
+                            <input type="email" name="cliente_email" class="form-control" required
+                                   value="{% if editing %}{{ cotizacion.cliente_email }}{% endif %}"
+                                   placeholder="cliente@email.com">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Teléfono</label>
+                            <input type="text" name="cliente_telefono" class="form-control"
+                                   value="{% if editing %}{{ cotizacion.cliente_telefono }}{% endif %}"
+                                   placeholder="+34 600 000 000">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Edificio asociado</label>
+                            <select name="edificio" class="form-select">
+                                <option value="">Ninguno</option>
+                                {% for ed in edificios %}
+                                <option value="{{ ed.pk }}" {% if editing and cotizacion.edificio.pk == ed.pk %}selected{% endif %}>
+                                    {{ ed.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-custom p-4 mb-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-card-text me-2"></i>Detalles de la Cotización</h5>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Título *</label>
+                        <input type="text" name="titulo" class="form-control" required
+                               value="{% if editing %}{{ cotizacion.titulo }}{% endif %}"
+                               placeholder="Ej: Restauración fachada principal">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Descripción</label>
+                        <textarea name="descripcion" class="form-control" rows="3"
+                                  placeholder="Describe el alcance del trabajo...">{% if editing %}{{ cotizacion.descripcion }}{% endif %}</textarea>
+                    </div>
+                </div>
+
+                <div class="card-custom p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-list-check me-2"></i>Conceptos</h5>
+                        <button type="button" class="btn btn-sm btn-outline-accent" onclick="addItem()">
+                            <i class="bi bi-plus-lg me-1"></i>Agregar concepto
+                        </button>
+                    </div>
+                    <div id="itemsContainer">
+                        {% if editing and items %}
+                            {% for item in items %}
+                            <div class="item-row row g-2 mb-2 align-items-end">
+                                <div class="col-md-5">
+                                    <input type="text" name="concepto[]" class="form-control" placeholder="Concepto" value="{{ item.concepto }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" name="cantidad[]" class="form-control" placeholder="Cant." step="0.01" value="{{ item.cantidad }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" name="precio_unitario[]" class="form-control" placeholder="Precio (EUR)" step="0.01" value="{{ item.precio_unitario }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeItem(this)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                        <div class="item-row row g-2 mb-2 align-items-end">
+                            <div class="col-md-5">
+                                <input type="text" name="concepto[]" class="form-control" placeholder="Concepto">
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" name="cantidad[]" class="form-control" placeholder="Cant." step="0.01" value="1">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" name="precio_unitario[]" class="form-control" placeholder="Precio (EUR)" step="0.01">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeItem(this)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card-custom p-4 sticky-top" style="top:80px;">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-check-circle me-2"></i>Acciones</h5>
+                    <button type="submit" class="btn btn-accent w-100 py-2 mb-2">
+                        <i class="bi bi-{% if editing %}save{% else %}check-lg{% endif %} me-2"></i>
+                        {% if editing %}Guardar Cambios{% else %}Crear Cotización{% endif %}
+                    </button>
+                    <a href="{% url 'monitor:cotizacion_list' %}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-x-lg me-1"></i>Cancelar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<script>
+function addItem() {
+    const container = document.getElementById('itemsContainer');
+    const html = `<div class="item-row row g-2 mb-2 align-items-end">
+        <div class="col-md-5"><input type="text" name="concepto[]" class="form-control" placeholder="Concepto"></div>
+        <div class="col-md-2"><input type="number" name="cantidad[]" class="form-control" placeholder="Cant." step="0.01" value="1"></div>
+        <div class="col-md-3"><input type="number" name="precio_unitario[]" class="form-control" placeholder="Precio (EUR)" step="0.01"></div>
+        <div class="col-md-2"><button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeItem(this)"><i class="bi bi-trash"></i></button></div>
+    </div>`;
+    container.insertAdjacentHTML('beforeend', html);
+}
+function removeItem(btn) {
+    const items = document.querySelectorAll('.item-row');
+    if (items.length > 1) {
+        btn.closest('.item-row').remove();
+    }
+}
+</script>
+{% endblock %}

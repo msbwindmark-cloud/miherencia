@@ -2114,3 +2114,686 @@ class NotificacionPush(models.Model):
 
     def __str__(self):
         return f'{self.titulo} - {self.usuario.username}'
+
+
+class EmailVerificationToken(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='email_tokens')
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    expirado = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'Token de Verificación Email'
+        verbose_name_plural = 'Tokens de Verificación Email'
+        ordering = ['-creado']
+
+    def __str__(self):
+        return f'{self.user.username} - {self.token}'
+
+    @property
+    def esta_valido(self):
+        if self.expirado:
+            return False
+        return (timezone.now() - self.creado).total_seconds() < 86400
+
+
+class MFAConfig(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='mfa_config')
+    secret = models.CharField(max_length=64, blank=True)
+    is_enabled = models.BooleanField(default=False)
+    qr_generated = models.BooleanField(default=False)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Configuración MFA'
+        verbose_name_plural = 'Configuraciones MFA'
+
+    def __str__(self):
+        return f'MFA {self.user.username} - {"Activo" if self.is_enabled else "Inactivo"}'
+
+
+class LoginAttempt(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    ip_address = models.GenericIPAddressField()
+    username = models.CharField(max_length=150)
+    exitoso = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Intento de Login'
+        verbose_name_plural = 'Intentos de Login'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        estado = 'OK' if self.exitoso else 'FALLIDO'
+        return f'{self.username} - {self.ip_address} - {estado}'
+
+
+class Cotizacion(models.Model):
+    ESTADO_CHOICES = [
+        ('borrador', 'Borrador'),
+        ('enviada', 'Enviada'),
+        ('aceptada', 'Aceptada'),
+        ('rechazada', 'Rechazada'),
+        ('expirada', 'Expirada'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cliente_nombre = models.CharField(max_length=200)
+    cliente_email = models.EmailField()
+    cliente_telefono = models.CharField(max_length=30, blank=True)
+    edificio = models.ForeignKey('Edificio', on_delete=models.SET_NULL, null=True, blank=True, related_name='cotizaciones')
+    titulo = models.CharField(max_length=300)
+    descripcion = models.TextField(blank=True)
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='borrador')
+    token_publico = models.UUIDField(default=uuid.uuid4, unique=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_envio = models.DateTimeField(null=True, blank=True)
+    fecha_expiracion = models.DateTimeField(null=True, blank=True)
+    fecha_respuesta = models.DateTimeField(null=True, blank=True)
+    motivo_rechazo = models.TextField(blank=True)
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='cotizaciones_creadas')
+
+    class Meta:
+        verbose_name = 'Cotización'
+        verbose_name_plural = 'Cotizaciones'
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f'{self.titulo} - {self.cliente_nombre} ({self.get_estado_display()})'
+
+    @property
+    def esta_vencida(self):
+        if self.fecha_expiracion and self.estado == 'enviada':
+            return timezone.now() > self.fecha_expiracion
+        return False
+
+    @property
+    def dias_restantes(self):
+        if self.fecha_expiracion and self.estado == 'enviada':
+            delta = self.fecha_expiracion - timezone.now()
+            return max(delta.days, 0)
+        return 0
+
+
+class CotizacionItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name='items')
+    concepto = models.CharField(max_length=300)
+    descripcion = models.TextField(blank=True)
+    cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    class Meta:
+        verbose_name = 'Item de Cotización'
+        verbose_name_plural = 'Items de Cotización'
+        ordering = ['id']
+
+    def save(self, *args, **kwargs):
+        self.subtotal = self.cantidad * self.precio_unitario
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.concepto} - {self.subtotal} EUR'
+
+
+class CotizacionHistorial(models.Model):
+    ACCION_CHOICES = [
+        ('creada', 'Creada'),
+        ('editada', 'Editada'),
+        ('enviada', 'Enviada'),
+        ('aceptada', 'Aceptada'),
+        ('rechazada', 'Rechazada'),
+        ('expirada', 'Expirada'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name='historial')
+    accion = models.CharField(max_length=15, choices=ACCION_CHOICES)
+    comentario = models.TextField(blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Historial de Cotización'
+        verbose_name_plural = 'Historial de Cotizaciones'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f'{self.cotizacion.titulo} - {self.get_accion_display()}'
+
+
+# =============================================
+# FUNCIONALIDADES INNOVADORAS - PLAN MAESTRO
+# =============================================
+
+# --- 1. TIME MACHINE PATRIMONIAL ---
+class TimeMachineRequest(models.Model):
+    ESTILO_CHOICES = [
+        ('romano', 'Epoca Romana'),
+        ('medieval', 'Medieval'),
+        ('renacimiento', 'Renacimiento'),
+        ('barroco', 'Barroco'),
+        ('neoclasico', 'Neoclasico'),
+        ('modernista', 'Modernista'),
+        ('otro', 'Otro'),
+    ]
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('procesando', 'Procesando'),
+        ('completado', 'Completado'),
+        ('error', 'Error'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name='time_machine_requests')
+    imagen_original = models.ImageField(upload_to='time_machine/original/')
+    imagen_generada = models.ImageField(upload_to='time_machine/generated/', null=True, blank=True)
+    epoca_destino = models.PositiveIntegerField(verbose_name='Ano destino (ej: 1800)')
+    estilo_reconstruccion = models.CharField(max_length=20, choices=ESTILO_CHOICES, default='medieval')
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    prompt_generado = models.TextField(blank=True)
+    confianza = models.FloatField(default=0, verbose_name='Confianza del modelo (%)')
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_completado = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Time Machine Request'
+        verbose_name_plural = 'Time Machine Requests'
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f'TimeMachine: {self.edificio.nombre} -> {self.epoca_destino}'
+
+
+# --- 2. DIGITAL TWIN 3D INTERACTIVO ---
+class DigitalTwinSesion(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name='twin_sesiones')
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    duracion_segundos = models.PositiveIntegerField(default=0)
+    interacciones = models.JSONField(default=dict, blank=True, verbose_name='Clicks, rotaciones, zooms')
+    zonas_exploradas = models.JSONField(default=list, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Sesion Digital Twin'
+        verbose_name_plural = 'Sesiones Digital Twin'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f'Twin: {self.edificio.nombre} - {self.usuario.username}'
+
+
+# --- 3. SIMULADOR DE DESASTRES ---
+class SimulacionDesastre(models.Model):
+    TIPO_CHOICES = [
+        ('terremoto', 'Terremoto'),
+        ('incendio', 'Incendio'),
+        ('inundacion', 'Inundacion'),
+        ('viento', 'Viento Fuerte'),
+        ('colapso', 'Colapso Parcial'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name='simulaciones_desastre')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    intensidad = models.FloatField(verbose_name='Intensidad (Richter / grados / litros)')
+    duracion_segundos = models.PositiveIntegerField(default=60)
+    resultado = models.JSONField(default=dict, blank=True, verbose_name='Danos estimados y zonas afectadas')
+    costo_dano_estimado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    zonas_afectadas = models.JSONField(default=list, blank=True)
+    recomendaciones = models.TextField(blank=True)
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Simulacion de Desastre'
+        verbose_name_plural = 'Simulaciones de Desastre'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f'{self.get_tipo_display()} - {self.edificio.nombre} (Intensidad: {self.intensidad})'
+
+
+# --- 4. PATRIMONIO VIVO (Camaras IA) ---
+class CamaraVigilancia(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name='camaras')
+    nombre = models.CharField(max_length=150)
+    ubicacion = models.CharField(max_length=300, verbose_name='Ubicacion en el edificio')
+    url_stream = models.URLField(blank=True, verbose_name='URL del stream')
+    activa = models.BooleanField(default=True)
+    detectar_vandalismo = models.BooleanField(default=True)
+    contar_visitantes = models.BooleanField(default=True)
+    fecha_instalacion = models.DateField(default=timezone.now)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Camara de Vigilancia'
+        verbose_name_plural = 'Camaras de Vigilancia'
+        ordering = ['edificio', 'nombre']
+
+    def __str__(self):
+        return f'{self.nombre} - {self.edificio.nombre}'
+
+    @property
+    def eventos_hoy(self):
+        hoy = timezone.now().date()
+        return self.eventos.filter(fecha__date=hoy).count()
+
+
+class EventoVigilancia(models.Model):
+    TIPO_CHOICES = [
+        ('vandalismo', 'Vandalismo Detectado'),
+        ('movimiento', 'Movimiento Detectado'),
+        ('conteo', 'Conteo de Visitantes'),
+        ('acceso', 'Acceso No Autorizado'),
+        ('anomalia', 'Anomalia Visual'),
+    ]
+    SEVERIDAD_CHOICES = [
+        ('info', 'Informativa'),
+        ('warning', 'Advertencia'),
+        ('critical', 'Critica'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    camara = models.ForeignKey(CamaraVigilancia, on_delete=models.CASCADE, related_name='eventos')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    severidad = models.CharField(max_length=10, choices=SEVERIDAD_CHOICES, default='info')
+    titulo = models.CharField(max_length=200)
+    descripcion = models.TextField()
+    imagen_captura = models.ImageField(upload_to='vigilancia/capturas/', null=True, blank=True)
+    personas_detectadas = models.PositiveIntegerField(default=0)
+    coordenadas_zona = models.JSONField(default=dict, blank=True, verbose_name='Coordenadas de la zona detectada')
+    procesada_ia = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Evento de Vigilancia'
+        verbose_name_plural = 'Eventos de Vigilancia'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f'[{self.get_severidad_display()}] {self.get_tipo_display()} - {self.camara.nombre}'
+
+
+# --- 5. HERITAGE NFT MARKETPLACE ---
+class HeritageNFT(models.Model):
+    ESTADO_CHOICES = [
+        ('disponible', 'Disponible'),
+        ('en_subasta', 'En Subasta'),
+        ('vendido', 'Vendido'),
+        ('reservado', 'Reservado'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name='nfts')
+    titulo = models.CharField(max_length=200)
+    descripcion = models.TextField()
+    imagen = models.ImageField(upload_to='nft/imagenes/')
+    precio_inicial = models.DecimalField(max_digits=12, decimal_places=2)
+    precio_actual = models.DecimalField(max_digits=12, decimal_places=2)
+    propietario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='nfts_poseidos')
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='nfts_creados')
+    token_id = models.CharField(max_length=100, blank=True, verbose_name='Token ID (simulado)')
+    hash_contrato = models.CharField(max_length=200, blank=True, verbose_name='Hash del contrato')
+    estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='disponible')
+    es_subasta = models.BooleanField(default=False)
+    tiempo_subasta_horas = models.PositiveIntegerField(default=24)
+    pujas = models.PositiveIntegerField(default=0)
+    visitas = models.PositiveIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_venta = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Heritage NFT'
+        verbose_name_plural = 'Heritage NFTs'
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f'NFT: {self.titulo} - {self.precio_actual} EUR'
+
+    @property
+    def esta_activo_subasta(self):
+        if self.es_subasta and self.estado == 'en_subasta':
+            return True
+        return False
+
+
+class PujaNFT(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nft = models.ForeignKey(HeritageNFT, on_delete=models.CASCADE, related_name='historial_pujas')
+    postor = models.ForeignKey(User, on_delete=models.CASCADE)
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    fecha = models.DateTimeField(auto_now_add=True)
+    es_ganadora = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'Puja NFT'
+        verbose_name_plural = 'Pujas NFT'
+        ordering = ['-monto']
+
+    def __str__(self):
+        return f'{self.postor.username} - {self.monto} EUR por {self.nft.titulo}'
+
+
+# --- 6. SMART CONTRACTS DE RESTAURACION ---
+class SmartContract(models.Model):
+    ESTADO_CHOICES = [
+        ('borrador', 'Borrador'),
+        ('activo', 'Activo'),
+        ('en_progreso', 'En Progreso'),
+        ('completado', 'Completado'),
+        ('cancelado', 'Cancelado'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name='smart_contracts')
+    titulo = models.CharField(max_length=200)
+    descripcion = models.TextField()
+    monto_total = models.DecimalField(max_digits=12, decimal_places=2)
+    contratista = models.ForeignKey(User, on_delete=models.CASCADE, related_name='contracts_como_contratista')
+    creador = models.ForeignKey(User, on_delete=models.CASCADE, related_name='contracts_creados')
+    estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='borrador')
+    hash_blockchain = models.CharField(max_length=200, blank=True, verbose_name='Hash simulado')
+    fecha_inicio = models.DateField(null=True, blank=True)
+    fecha_fin_estimada = models.DateField(null=True, blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_completado = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Smart Contract'
+        verbose_name_plural = 'Smart Contracts'
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f'{self.titulo} - {self.get_estado_display()}'
+
+    @property
+    def porcentaje_completado(self):
+        hitos = self.hitos.all()
+        if not hitos:
+            return 0
+        completados = hitos.filter(completado=True).count()
+        return round((completados / hitos.count()) * 100)
+
+    @property
+    def monto_liberado(self):
+        return self.hitos.filter(completado=True).aggregate(total=models.Sum('monto_liberar'))['total'] or 0
+
+
+class HitoContrato(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    contrato = models.ForeignKey(SmartContract, on_delete=models.CASCADE, related_name='hitos')
+    titulo = models.CharField(max_length=200)
+    descripcion = models.TextField()
+    monto_liberar = models.DecimalField(max_digits=12, decimal_places=2)
+    porcentaje = models.FloatField(verbose_name='Porcentaje del total')
+    completado = models.BooleanField(default=False)
+    fecha_limite = models.DateField(null=True, blank=True)
+    fecha_completado = models.DateTimeField(null=True, blank=True)
+    evidencia_foto = models.ImageField(upload_to='contratos/evidencia/', null=True, blank=True)
+    evidencia_descripcion = models.TextField(blank=True)
+    orden = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Hito de Contrato'
+        verbose_name_plural = 'Hitos de Contrato'
+        ordering = ['orden']
+
+    def __str__(self):
+        return f'{self.titulo} - {self.porcentaje}% ({self.contrato.titulo})'
+
+
+# --- 7. HERITAGE CARBON CREDITS ---
+class CarbonCredit(models.Model):
+    METODO_CHOICES = [
+        ('restauracion', 'Restauracion Sostenible'),
+        ('energia', 'Energia Renovable'),
+        ('materiales', 'Materiales Ecosostenibles'),
+        ('agua', 'Ahorro de Agua'),
+        ('residuos', 'Gestion de Residuos'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name='carbon_credits')
+    creditos_generados = models.FloatField(verbose_name='Toneladas CO2 evitadas')
+    certificado = models.CharField(max_length=100, verbose_name='Numero de certificado')
+    metodo_calculo = models.CharField(max_length=20, choices=METODO_CHOICES)
+    descripcion = models.TextField(blank=True)
+    fecha_generacion = models.DateField(default=timezone.now)
+    validado = models.BooleanField(default=False)
+    validado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    documento_certificado = models.FileField(upload_to='carbon_credits/', null=True, blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Carbon Credit'
+        verbose_name_plural = 'Carbon Credits'
+        ordering = ['-fecha_generacion']
+
+    def __str__(self):
+        return f'{self.certificado} - {self.creditos_generados} tCO2'
+
+
+# --- 8. DNA DEL EDIFICIO (Fingerprint Estructural) ---
+class DNAEdificio(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    edificio = models.OneToOneField(Edificio, on_delete=models.CASCADE, related_name='dna')
+    score_estructural = models.FloatField(default=50, verbose_name='Score Estructural (0-100)')
+    score_ambiental = models.FloatField(default=50, verbose_name='Score Ambiental (0-100)')
+    score_historico = models.FloatField(default=50, verbose_name='Score Historico (0-100)')
+    score_accesibilidad = models.FloatField(default=50, verbose_name='Score Accesibilidad (0-100)')
+    score_tecnologico = models.FloatField(default=50, verbose_name='Score Tecnologico (0-100)')
+    score_energetico = models.FloatField(default=50, verbose_name='Score Energetico (0-100)')
+    fingerprint = models.CharField(max_length=64, unique=True, verbose_name='Hash unico del DNA')
+    version = models.PositiveIntegerField(default=1)
+    fecha_calculo = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'DNA del Edificio'
+        verbose_name_plural = 'DNAs de Edificios'
+
+    def __str__(self):
+        return f'DNA: {self.edificio.nombre} (v{self.version})'
+
+    @property
+    def score_global(self):
+        scores = [self.score_estructural, self.score_ambiental, self.score_historico,
+                  self.score_accesibilidad, self.score_tecnologico, self.score_energetico]
+        return round(sum(scores) / len(scores))
+
+    @property
+    def estado_general(self):
+        s = self.score_global
+        if s >= 80: return 'excelente'
+        if s >= 60: return 'bueno'
+        if s >= 40: return 'regular'
+        if s >= 20: return 'malo'
+        return 'critico'
+
+    def save(self, *args, **kwargs):
+        import hashlib
+        data = f'{self.edificio_id}{self.score_estructural}{self.score_ambiental}{self.score_historico}'
+        self.fingerprint = hashlib.sha256(data.encode()).hexdigest()[:64]
+        super().save(*args, **kwargs)
+
+
+# --- 9. AI HERITAGE GUARDIAN (Monitoreo 24/7) ---
+class GuardianRule(models.Model):
+    TIPO_SENSOR_CHOICES = [
+        ('temperatura', 'Temperatura'),
+        ('humedad', 'Humedad'),
+        ('vibracion', 'Vibracion'),
+        ('co2', 'CO2'),
+        ('ruido', 'Ruido'),
+        ('grieta', 'Grietas'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField()
+    tipo_sensor = models.CharField(max_length=20, choices=TIPO_SENSOR_CHOICES)
+    condicion = models.JSONField(default=dict, verbose_name='Condicion JSON (ej: {"min": 10, "max": 30})')
+    severidad = models.CharField(max_length=10, choices=[('warning', 'Advertencia'), ('critical', 'Critica')], default='warning')
+    activa = models.BooleanField(default=True)
+    edificios = models.ManyToManyField(Edificio, blank=True, related_name='guardian_rules')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Regla Guardian IA'
+        verbose_name_plural = 'Reglas Guardian IA'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return f'{self.nombre} ({self.get_tipo_sensor_display()})'
+
+
+class GuardianAlert(models.Model):
+    SEVERIDAD_CHOICES = [
+        ('info', 'Informativa'),
+        ('warning', 'Advertencia'),
+        ('critical', 'Critica'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    regla = models.ForeignKey(GuardianRule, on_delete=models.CASCADE, related_name='alertas')
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name='guardian_alerts')
+    sensor = models.ForeignKey(Sensor, on_delete=models.SET_NULL, null=True, blank=True)
+    titulo = models.CharField(max_length=200)
+    mensaje = models.TextField()
+    severidad = models.CharField(max_length=10, choices=SEVERIDAD_CHOICES, default='warning')
+    valor_detectado = models.FloatField(default=0)
+    valor_esperado_min = models.FloatField(default=0)
+    valor_esperado_max = models.FloatField(default=0)
+    resuelta = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+    fecha_resolucion = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Alerta Guardian IA'
+        verbose_name_plural = 'Alertas Guardian IA'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f'[{self.get_severidad_display()}] {self.titulo} - {self.edificio.nombre}'
+
+
+# --- 10. TOUR VR/AR IMMERSIVE ---
+class TourVR(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    edificio = models.ForeignKey(Edificio, on_delete=models.CASCADE, related_name='tours_vr')
+    titulo = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True)
+    imagen_panoramica = models.ImageField(upload_to='tours_vr/panoramas/', null=True, blank=True)
+    video_360_url = models.URLField(blank=True, verbose_name='URL Video 360')
+    modelo_glb_url = models.URLField(blank=True, verbose_name='URL Modelo 3D (GLB/GLTF)')
+    puntos_interes = models.JSONField(default=list, blank=True, verbose_name='Puntos de interes con info')
+    coordenadas_lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    coordenadas_lng = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    activo = models.BooleanField(default=True)
+    es_vr = models.BooleanField(default=False, verbose_name='Soporta VR')
+    es_ar = models.BooleanField(default=False, verbose_name='Soporta AR')
+    vistas = models.PositiveIntegerField(default=0)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Tour VR/AR'
+        verbose_name_plural = 'Tours VR/AR'
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f'Tour VR: {self.titulo} - {self.edificio.nombre}'
+
+
+# --- 11. GAMIFICACION AVANZADA (Desafios) ---
+class Desafio(models.Model):
+    TIPO_CHOICES = [
+        ('diario', 'Diario'),
+        ('semanal', 'Semanal'),
+        ('mensual', 'Mensual'),
+        ('especial', 'Especial'),
+    ]
+    ACCION_CHOICES = [
+        ('resolver_alerta', 'Resolver Alerta'),
+        ('registrar_lectura', 'Registrar Lectura'),
+        ('crear_edificio', 'Crear Edificio'),
+        ('crear_sensor', 'Crear Sensor'),
+        ('generar_informe', 'Generar Informe'),
+        ('login_diario', 'Login Diario'),
+        ('completar_mantenimiento', 'Completar Mantenimiento'),
+        ('analisis_ia', 'Analisis IA'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    titulo = models.CharField(max_length=200)
+    descripcion = models.TextField()
+    tipo = models.CharField(max_length=15, choices=TIPO_CHOICES, default='diario')
+    accion_requerida = models.CharField(max_length=30, choices=ACCION_CHOICES)
+    objetivo = models.PositiveIntegerField(default=1, verbose_name='Cantidad objetivo')
+    puntos_recompensa = models.PositiveIntegerField(default=10)
+    icono = models.CharField(max_length=20, default='trophy')
+    color = models.CharField(max_length=7, default='#d4a853')
+    fecha_inicio = models.DateTimeField()
+    fecha_fin = models.DateTimeField()
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Desafio'
+        verbose_name_plural = 'Desafios'
+        ordering = ['-fecha_inicio']
+
+    def __str__(self):
+        return f'{self.titulo} ({self.get_tipo_display()})'
+
+    @property
+    def esta_activo(self):
+        now = timezone.now()
+        return self.fecha_inicio <= now <= self.fecha_fin
+
+
+class DesafioUsuario(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    desafio = models.ForeignKey(Desafio, on_delete=models.CASCADE, related_name='participaciones')
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='desafios_participacion')
+    completado = models.BooleanField(default=False)
+    progreso = models.FloatField(default=0, verbose_name='Progreso (0-100)')
+    puntos_ganados = models.PositiveIntegerField(default=0)
+    fecha_completado = models.DateTimeField(null=True, blank=True)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Participacion en Desafio'
+        verbose_name_plural = 'Participaciones en Desafios'
+        ordering = ['-fecha_registro']
+        unique_together = ['desafio', 'usuario']
+
+    def __str__(self):
+        return f'{self.usuario.username} - {self.desafio.titulo} ({self.progreso}%)'
+
+
+# --- 12. RESTRICCIONES Y AVATAR DE USUARIO AVANZADO ---
+class AvatarUsuario(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='avatar_avanzado')
+    imagen_avatar = models.ImageField(upload_to='avatars/avanzados/', null=True, blank=True)
+    frame = models.CharField(max_length=50, default='basico', verbose_name='Marco del avatar')
+    insignia_activa = models.CharField(max_length=50, blank=True, verbose_name='Insignia activa')
+    titulo_perfil = models.CharField(max_length=100, blank=True, verbose_name='Titulo visible en perfil')
+    total_puntos = models.PositiveIntegerField(default=0)
+    nivel = models.PositiveIntegerField(default=1)
+    racha_dias = models.PositiveIntegerField(default=0, verbose_name='Racha de login diario')
+    ultima_visita = models.DateTimeField(null=True, blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Avatar de Usuario'
+        verbose_name_plural = 'Avatares de Usuarios'
+
+    def __str__(self):
+        return f'{self.usuario.username} - Nivel {self.nivel}'
+
+    @property
+    def puntos_para_siguiente_nivel(self):
+        return self.nivel * 100
+
+    def save(self, *args, **kwargs):
+        self.nivel = max(1, self.total_puntos // 100 + 1)
+        super().save(*args, **kwargs)

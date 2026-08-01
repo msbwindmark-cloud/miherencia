@@ -3,7 +3,9 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from .models import (Edificio, Sensor, Lectura, Informe, SensorFoto, Equipo, Mantenimiento, TimelineFoto,
     AnalisisIA, PrediccionML, Donacion, ReporteCiudadano, Seguro, EficienciaEnergetica,
-    CumplimientoLegal, CertificadoBlockchain, TourVirtual, Evento, TiendaPatrimonio)
+    CumplimientoLegal, CertificadoBlockchain, TourVirtual, Evento, TiendaPatrimonio,
+    CamaraVigilancia, HeritageNFT, SmartContract, CarbonCredit, DNAEdificio,
+    GuardianRule, TourVR, Desafio, TimeMachineRequest, SimulacionDesastre)
 
 
 class UserRegisterForm(UserCreationForm):
@@ -327,4 +329,122 @@ class TiendaPatrimonioForm(forms.ModelForm):
             'imagen': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'stock': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '100'}),
             'destacado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+# --- FORMULARIOS FUNCIONALIDADES INNOVADORAS ---
+
+class TimeMachineForm(forms.Form):
+    imagen = forms.ImageField(widget=forms.ClearableFileInput(attrs={'class': 'form-control'}))
+    epoca_destino = forms.IntegerField(min_value=500, max_value=2025, initial=1800,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'id': 'epoca-slider'}))
+    estilo_reconstruccion = forms.ChoiceField(choices=[
+        ('romano', 'Epoca Romana'), ('medieval', 'Medieval'),
+        ('renacimiento', 'Renacimiento'), ('barroco', 'Barroco'),
+        ('neoclasico', 'Neoclasico'), ('modernista', 'Modernista'),
+    ], widget=forms.Select(attrs={'class': 'form-select'}))
+
+
+class SimuladorDesastreForm(forms.Form):
+    TIPO_CHOICES = [('terremoto', 'Terremoto'), ('incendio', 'Incendio'),
+                    ('inundacion', 'Inundacion'), ('viento', 'Viento Fuerte')]
+    tipo = forms.ChoiceField(choices=TIPO_CHOICES, widget=forms.Select(attrs={'class': 'form-select'}))
+    intensidad = forms.FloatField(min_value=0, max_value=100, initial=5.0,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'id': 'intensidad-slider'}))
+
+
+class CamaraVigilanciaForm(forms.ModelForm):
+    class Meta:
+        model = CamaraVigilancia
+        fields = ['nombre', 'ubicacion', 'detectar_vandalismo', 'contar_visitantes']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'ubicacion': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class HeritageNFTForm(forms.ModelForm):
+    class Meta:
+        model = HeritageNFT
+        fields = ['titulo', 'descripcion', 'imagen', 'precio_inicial', 'es_subasta']
+        widgets = {
+            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'precio_inicial': forms.NumberInput(attrs={'class': 'form-control'}),
+            'imagen': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+
+class SmartContractForm(forms.ModelForm):
+    class Meta:
+        model = SmartContract
+        fields = ['titulo', 'descripcion', 'monto_total', 'contratista']
+        widgets = {
+            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'monto_total': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+
+class CarbonCreditForm(forms.ModelForm):
+    class Meta:
+        model = CarbonCredit
+        fields = ['edificio', 'creditos_generados', 'metodo_calculo', 'descripcion']
+        widgets = {
+            'creditos_generados': forms.NumberInput(attrs={'class': 'form-control'}),
+            'metodo_calculo': forms.Select(attrs={'class': 'form-select'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+
+class DNAEdificioForm(forms.ModelForm):
+    class Meta:
+        model = DNAEdificio
+        fields = ['score_estructural', 'score_ambiental', 'score_historico',
+                  'score_accesibilidad', 'score_tecnologico', 'score_energetico']
+        widgets = {
+            'score_estructural': forms.NumberInput(attrs={'class': 'form-range', 'type': 'range', 'min': 0, 'max': 100}),
+            'score_ambiental': forms.NumberInput(attrs={'class': 'form-range', 'type': 'range', 'min': 0, 'max': 100}),
+            'score_historico': forms.NumberInput(attrs={'class': 'form-range', 'type': 'range', 'min': 0, 'max': 100}),
+            'score_accesibilidad': forms.NumberInput(attrs={'class': 'form-range', 'type': 'range', 'min': 0, 'max': 100}),
+            'score_tecnologico': forms.NumberInput(attrs={'class': 'form-range', 'type': 'range', 'min': 0, 'max': 100}),
+            'score_energetico': forms.NumberInput(attrs={'class': 'form-range', 'type': 'range', 'min': 0, 'max': 100}),
+        }
+
+
+class GuardianRuleForm(forms.ModelForm):
+    class Meta:
+        model = GuardianRule
+        fields = ['nombre', 'descripcion', 'tipo_sensor', 'condicion', 'severidad']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'tipo_sensor': forms.Select(attrs={'class': 'form-select'}),
+            'severidad': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+
+class TourVRForm(forms.ModelForm):
+    class Meta:
+        model = TourVR
+        fields = ['titulo', 'descripcion', 'video_360_url', 'modelo_glb_url', 'es_vr', 'es_ar']
+        widgets = {
+            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'video_360_url': forms.URLInput(attrs={'class': 'form-control'}),
+            'modelo_glb_url': forms.URLInput(attrs={'class': 'form-control'}),
+        }
+
+
+class DesafioForm(forms.ModelForm):
+    class Meta:
+        model = Desafio
+        fields = ['titulo', 'descripcion', 'tipo', 'accion_requerida', 'objetivo', 'puntos_recompensa']
+        widgets = {
+            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'accion_requerida': forms.Select(attrs={'class': 'form-select'}),
+            'objetivo': forms.NumberInput(attrs={'class': 'form-control'}),
+            'puntos_recompensa': forms.NumberInput(attrs={'class': 'form-control'}),
         }

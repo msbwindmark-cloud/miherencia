@@ -103,6 +103,7 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='SmartHeritage <noreply@smartheritage.com>')
+SITE_URL = env('SITE_URL', default='http://localhost:8000')
 
 CORS_ALLOW_ALL_ORIGINS = True
 

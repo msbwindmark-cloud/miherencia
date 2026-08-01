@@ -12,6 +12,10 @@
     .stream-item.alerta { border-left: 3px solid var(--danger); background: rgba(231,76,60,0.05); }
     .stream-item.ok { border-left: 3px solid var(--success); }
     @keyframes slideIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+    .ws-status { font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; }
+    .ws-connected { background: rgba(46,204,113,0.15); color: var(--success); }
+    .ws-disconnected { background: rgba(231,76,60,0.15); color: var(--danger); }
+    .ws-connecting { background: rgba(243,156,18,0.15); color: var(--warning); }
 </style>
 {% endblock %}
 
@@ -21,29 +25,40 @@
         <h2 class="mb-1"><i class="bi bi-broadcast" style="color:var(--accent);"></i> Dashboard Tiempo Real</h2>
         <p class="text-muted mb-0">Flujo de datos en vivo de todos los sensores</p>
     </div>
-    <span class="badge bg-success rounded-pill" style="font-size:0.85rem; padding:8px 16px;">
-        <span class="live-dot me-1"></span> EN VIVO
-    </span>
-    <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary ms-2"><i class="bi bi-arrow-left"></i> Volver</a>
+    <div class="d-flex align-items-center gap-2">
+        <span id="ws-indicator" class="ws-status ws-connecting">
+            <i class="bi bi-wifi"></i> Conectando...
+        </span>
+        <span class="badge bg-success rounded-pill" style="font-size:0.85rem; padding:8px 16px;">
+            <span class="live-dot me-1"></span> EN VIVO
+        </span>
+        <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary ms-2"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
 </div>
 
 <div class="row g-4 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="glass-card p-4 text-center" style="border-left:4px solid var(--accent);">
             <h2 style="color:var(--accent);">{{ stats.lecturas_ultima_hora }}</h2>
             <p class="text-muted mb-0">Lecturas ultima hora</p>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="glass-card p-4 text-center" style="border-left:4px solid var(--warning);">
             <h2 style="color:var(--warning);">{{ stats.alertas_ultima_hora }}</h2>
             <p class="text-muted mb-0">Alertas ultima hora</p>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="glass-card p-4 text-center" style="border-left:4px solid var(--success);">
             <h2 style="color:var(--success);">{{ stats.sensores_activos }}</h2>
             <p class="text-muted mb-0">Sensores activos</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--gold);">
+            <h2 style="color:var(--gold);" id="ws-messages-count">0</h2>
+            <p class="text-muted mb-0">Mensajes WS</p>
         </div>
     </div>
 </div>
@@ -53,18 +68,31 @@
         <div class="glass-card">
             <div class="p-3 d-flex justify-content-between align-items-center" style="border-bottom:1px solid rgba(255,255,255,0.05);">
                 <h5 class="mb-0"><i class="bi bi-activity me-2" style="color:var(--accent);"></i>Flujo de Datos en Vivo</h5>
-                <span class="live-dot"></span>
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-glass" onclick="simularLectura()" title="Simular lectura">
+                        <i class="bi bi-play-circle"></i> Simular
+                    </button>
+                    <span class="live-dot"></span>
+                </div>
             </div>
             <div style="max-height:500px; overflow-y:auto;" id="stream-container">
             </div>
         </div>
     </div>
     <div class="col-lg-4">
-        <div class="glass-card">
+        <div class="glass-card mb-4">
             <div class="p-3" style="border-bottom:1px solid rgba(255,255,255,0.05);">
                 <h5 class="mb-0"><i class="bi bi-graph-up me-2" style="color:var(--gold);"></i>Grafica en Vivo</h5>
             </div>
-            <div class="p-3"><canvas id="liveChart" height="300"></canvas></div>
+            <div class="p-3"><canvas id="liveChart" height="250"></canvas></div>
+        </div>
+        <div class="glass-card">
+            <div class="p-3" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <h5 class="mb-0"><i class="bi bi-bell me-2" style="color:var(--danger);"></i>Alertas en Vivo</h5>
+            </div>
+            <div class="p-3" id="alertas-ws-container" style="max-height:300px; overflow-y:auto;">
+                <p class="text-muted text-center mb-0"><small>Esperando alertas...</small></p>
+            </div>
         </div>
     </div>
 </div>
@@ -74,36 +102,70 @@
 <script>
 const datos = {{ datos_stream|safe }};
 const container = document.getElementById('stream-container');
+const wsIndicator = document.getElementById('ws-indicator');
+const wsCountEl = document.getElementById('ws-messages-count');
+let wsMessagesCount = 0;
+let liveChart = null;
 
 if (datos.length === 0) {
-    container.innerHTML = '<div class="p-4 text-center text-muted"><i class="bi bi-broadcast fs-1"></i><p>No hay datos recientes. Crea lecturas en tus sensores.</p></div>';
+    container.innerHTML = '<div class="p-4 text-center text-muted"><i class="bi bi-broadcast fs-1"></i><p>No hay datos recientes. Pulsa "Simular" o espera datos de WebSocket.</p></div>';
 } else {
-    datos.forEach((d, i) => {
-        const cls = d.es_alerta ? 'alerta' : 'ok';
-        const html = `<div class="stream-item ${cls}" style="animation-delay:${i * 0.03}s">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>${d.sensor}</strong>
-                    <span class="badge rounded-pill ms-2" style="font-size:0.65rem; background:rgba(233,69,96,0.2); color:var(--accent);">${d.tipo}</span>
-                    <br><small class="text-muted">${d.edificio}</small>
-                </div>
-                <div class="text-end">
-                    <span class="fw-bold ${d.es_alerta ? 'text-danger' : ''}" style="font-size:1.1rem;">${d.valor} ${d.unidad}</span>
-                    <br><small class="text-muted">${d.fecha}</small>
-                </div>
+    datos.forEach((d, i) => addStreamItem(d, i));
+}
+
+function addStreamItem(d, i) {
+    const cls = d.es_alerta ? 'alerta' : 'ok';
+    const delay = (i || 0) * 0.03;
+    const html = `<div class="stream-item ${cls}" style="animation-delay:${delay}s">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>${d.sensor}</strong>
+                <span class="badge rounded-pill ms-2" style="font-size:0.65rem; background:rgba(233,69,96,0.2); color:var(--accent);">${d.tipo}</span>
+                <br><small class="text-muted">${d.edificio}</small>
             </div>
-        </div>`;
-        container.innerHTML += html;
-    });
+            <div class="text-end">
+                <span class="fw-bold ${d.es_alerta ? 'text-danger' : ''}" style="font-size:1.1rem;">${d.valor} ${d.unidad}</span>
+                <br><small class="text-muted">${d.fecha}</small>
+            </div>
+        </div>
+    </div>`;
+    container.insertAdjacentHTML('afterbegin', html);
+    if (container.children.length > 100) {
+        container.removeChild(container.lastChild);
+    }
+}
+
+function addAlertaItem(alerta) {
+    const alertasContainer = document.getElementById('alertas-ws-container');
+    const severityColors = { info: 'var(--accent2)', warning: 'var(--warning)', critical: 'var(--danger)' };
+    const color = severityColors[alerta.severidad] || 'var(--text-secondary)';
+    const html = `<div class="stream-item alerta" style="border-left-color:${color};">
+        <div class="d-flex justify-content-between">
+            <div>
+                <strong style="color:${color};">${alerta.sensor}</strong>
+                <br><small class="text-muted">${alerta.edificio}</small>
+            </div>
+            <small class="text-muted">${alerta.fecha ? alerta.fecha.split('T')[1]?.substring(0,5) || '' : ''}</small>
+        </div>
+        <small class="text-muted">${alerta.mensaje?.substring(0, 80) || ''}</small>
+    </div>`;
+    alertasContainer.insertAdjacentHTML('afterbegin', html);
+    if (alertasContainer.children.length > 20) {
+        alertasContainer.removeChild(alertasContainer.lastChild);
+    }
 }
 
 if (datos.length > 0) {
+    initChart(datos);
+}
+
+function initChart(data) {
     const chartCtx = document.getElementById('liveChart').getContext('2d');
-    const last30 = datos.slice(-30);
-    new Chart(chartCtx, {
+    const last30 = data.slice(-30);
+    liveChart = new Chart(chartCtx, {
         type: 'line',
         data: {
-            labels: last30.map(d => d.fecha.split(' ')[1] || d.fecha),
+            labels: last30.map(d => d.fecha?.split(' ')[1] || d.fecha || ''),
             datasets: [{
                 label: 'Valores',
                 data: last30.map(d => d.valor),
@@ -115,9 +177,101 @@ if (datos.length > 0) {
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: { x: { display: false }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#999' } } }
+            scales: { x: { display: false }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#999' } } },
+            animation: { duration: 300 }
         }
     });
 }
+
+function updateChart(d) {
+    if (!liveChart) {
+        initChart([d]);
+        return;
+    }
+    liveChart.data.labels.push(d.fecha?.split(' ')[1] || d.fecha || '');
+    liveChart.data.datasets[0].data.push(d.valor);
+    if (liveChart.data.labels.length > 30) {
+        liveChart.data.labels.shift();
+        liveChart.data.datasets[0].data.shift();
+    }
+    liveChart.update('none');
+}
+
+function simularLectura() {
+    fetch('/api/v1/lecturas/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+    }).catch(() => {
+        fetch('{% url "monitor:dashboard_tiempo_real" %}', {method: 'GET'}).then(() => location.reload());
+    });
+}
+
+function getCookie(name) {
+    let value = null;
+    document.cookie.split(';').forEach(c => {
+        c = c.trim();
+        if (c.startsWith(name + '=')) value = decodeURIComponent(c.substring(name.length + 1));
+    });
+    return value;
+}
+
+// WebSocket connection
+let ws = null;
+const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const wsUrl = `${wsProtocol}//${window.location.host}/ws/alertas/`;
+
+function connectWebSocket() {
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = function() {
+        wsIndicator.className = 'ws-status ws-connected';
+        wsIndicator.innerHTML = '<i class="bi bi-wifi"></i> Conectado';
+        console.log('[WS] Conectado a alertas');
+    };
+
+    ws.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        wsMessagesCount++;
+        wsCountEl.textContent = wsMessagesCount;
+
+        if (data.type === 'alertas_iniciales' && data.alertas) {
+            data.alertas.forEach(a => addAlertaItem(a));
+        } else if (data.type === 'nueva_alerta') {
+            addAlertaItem(data.alerta);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    toast: true, position: 'top-end', icon: 'warning',
+                    title: 'Nueva Alerta',
+                    text: data.alerta.mensaje,
+                    showConfirmButton: false, timer: 4000,
+                });
+            }
+        } else if (data.type === 'alerta_resuelta') {
+            console.log('[WS] Alerta resuelta:', data.alerta_id);
+        } else if (data.type === 'pong') {
+            console.log('[WS] Pong received');
+        }
+    };
+
+    ws.onclose = function(e) {
+        wsIndicator.className = 'ws-status ws-disconnected';
+        wsIndicator.innerHTML = '<i class="bi bi-wifi-off"></i> Desconectado';
+        console.log('[WS] Desconectado. Reconectando en 5s...');
+        setTimeout(connectWebSocket, 5000);
+    };
+
+    ws.onerror = function(e) {
+        console.error('[WS] Error:', e);
+    };
+}
+
+connectWebSocket();
+
+// Ping keepalive
+setInterval(function() {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({type: 'ping'}));
+    }
+}, 30000);
 </script>
 {% endblock %}

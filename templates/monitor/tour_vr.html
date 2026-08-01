@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Tour VR/AR - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .vr-viewer { width: 100%; height: 500px; border-radius: var(--radius); background: #000; position: relative; overflow: hidden; }
+    .tour-360 { width: 100%; height: 100%; object-fit: cover; }
+    .tour-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
+    .tour-hotspot { position: absolute; width: 30px; height: 30px; border-radius: 50%; background: rgba(233,69,96,0.8); cursor: pointer; animation: hotspotPulse 2s infinite; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; }
+    @keyframes hotspotPulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(233,69,96,0.4); } 50% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(233,69,96,0); } }
+    .vr-badge { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.7); color: white; padding: 8px 16px; border-radius: 20px; }
+    .ar-overlay { position: absolute; background: rgba(26,26,46,0.9); backdrop-filter: blur(10px); border-radius: var(--radius-sm); padding: 15px; color: white; max-width: 250px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-badge-vr" style="color:var(--accent);"></i> Tour VR/AR</h2>
+        <p class="text-muted mb-0">{{ edificio.nombre }} - Recorrido inmersivo</p>
+    </div>
+    <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-9">
+        {% if tour_activo %}
+        <div class="glass-card p-2 mb-4">
+            <div class="vr-viewer">
+                {% if tour_activo.imagen_panoramica %}
+                <img src="{{ tour_activo.imagen_panoramica.url }}" class="tour-360" alt="Tour 360">
+                {% else %}
+                <div style="width:100%;height:100%;background:var(--gradient-hero);display:flex;align-items:center;justify-content:center;">
+                    <div class="text-center text-white">
+                        <i class="bi bi-badge-vr fs-1" style="font-size:4rem;"></i>
+                        <h4 class="mt-3">{{ tour_activo.titulo }}</h4>
+                        <p class="opacity-75">{{ tour_activo.descripcion }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="vr-badge">
+                    <i class="bi bi-badge-vr"></i> {% if tour_activo.es_vr %}VR{% endif %} {% if tour_activo.es_ar %}AR{% endif %} Tour
+                </div>
+                <div class="tour-controls">
+                    <button class="btn btn-light btn-sm" onclick="rotateView(-1)"><i class="bi bi-arrow-left"></i></button>
+                    <button class="btn btn-light btn-sm" onclick="rotateView(1)"><i class="bi bi-arrow-right"></i></button>
+                    <button class="btn btn-light btn-sm" onclick="toggleFullscreen()"><i class="bi bi-fullscreen"></i></button>
+                    {% if tour_activo.es_vr %}
+                    <button class="btn btn-warning btn-sm" onclick="enterVR()"><i class="bi bi-badge-vr"></i> Entrar VR</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card p-4">
+            <h5><i class="bi bi-info-circle"></i> Sobre este Tour</h5>
+            <p>{{ tour_activo.descripcion }}</p>
+            <div class="row g-3">
+                <div class="col-md-4"><small class="text-muted">Vistas:</small><br><strong>{{ tour_activo.vistas }}</strong></div>
+                <div class="col-md-4"><small class="text-muted">Puntos de interes:</small><br><strong>{{ tour_activo.puntos_interes|length }}</strong></div>
+                <div class="col-md-4"><small class="text-muted">Creado:</small><br><strong>{{ tour_activo.fecha_creacion|date:"d/m/Y" }}</strong></div>
+            </div>
+        </div>
+        {% else %}
+        <div class="glass-card p-5 text-center">
+            <i class="bi bi-badge-vr fs-1 text-muted"></i>
+            <p class="text-muted mt-2">No hay tours VR/AR disponibles para este edificio</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-3">
+        <div class="glass-card p-4 mb-4">
+            <h5><i class="bi bi-list"></i> Tours</h5>
+            {% for t in tours %}
+            <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                <div>
+                    <strong class="small">{{ t.titulo }}</strong><br>
+                    <small class="text-muted">{{ t.vistas }} vistas</small>
+                </div>
+                <span class="badge bg-{% if t.activo %}success{% else %}secondary{% endif %}">
+                    {% if t.activo %}Activo{% else %}Inactivo{% endif %}
+                </span>
+            </div>
+            {% empty %}
+            <p class="text-muted small">No hay tours creados</p>
+            {% endfor %}
+        </div>
+
+        <div class="glass-card p-4">
+            <h5><i class="bi bi-plus-circle"></i> Nuevo Tour</h5>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Titulo</label>
+                    <input type="text" name="titulo" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">URL Video 360</label>
+                    <input type="url" name="video_360_url" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">URL Modelo 3D (GLB)</label>
+                    <input type="url" name="modelo_glb_url" class="form-control">
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="es_vr" id="es-vr">
+                    <label class="form-check-label" for="es-vr">Soporta VR</label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="es_ar" id="es-ar">
+                    <label class="form-check-label" for="es-ar">Soporta AR</label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus"></i> Crear Tour</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentRotation = 0;
+function rotateView(dir) { currentRotation += dir * 30; document.querySelector('.tour-360').style.transform = `rotateY(${currentRotation}deg)`; }
+function toggleFullscreen() { const el = document.querySelector('.vr-viewer'); el.requestFullscreen ? el.requestFullscreen() : null; }
+function enterVR() { alert('Para experiencias VR completas, conecta un visor WebXR compatible.'); }
+</script>
+{% endblock %}

@@ -10,8 +10,8 @@
     <div style="position:absolute; bottom:20px; left:20px; z-index:10;" class="glass-card p-3">
         <small class="text-muted">
             <i class="bi bi-info-circle"></i> Arrastra para rotar | Scroll para zoom<br>
-            Tipo: {{ edificio.get_tipo_display() }} | Estilo: {{ edificio.get_estilo_arquitectonico_display|default:"N/A" }}<br>
-            {{ edificio.num_plantas }} plantas | {{ edificio.año_construccion|default:"N/A" }}
+            Categoria: {{ edificio.get_categoria_display }} | Ciudad: {{ edificio.ciudad }}<br>
+            {{ edificio.anno_construccion|default:"N/A" }} | Estado: {{ edificio.get_estado_general_display }}
         </small>
     </div>
     <div style="position:absolute; top:20px; right:20px; z-index:10;">
@@ -32,7 +32,7 @@ renderer.setSize(canvas.clientWidth, canvas.clientHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
 // Edificio base
-const plantas = {{ edificio.num_plantas|default:3 }};
+const plantas = {{ edificio.anno_construccion|default:1500 }} > 1900 ? 4 : 3;
 const ancho = 8, fondo = 6;
 const grupo = new THREE.Group();
 

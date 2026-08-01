@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Carbon Credits - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .credit-card { background: linear-gradient(135deg, #27ae60, #2ecc71); border-radius: var(--radius); padding: 30px; color: white; }
+    .carbon-stat { text-align: center; padding: 20px; }
+    .carbon-stat h2 { font-size: 2.5rem; font-weight: 800; }
+    .tree-icon { font-size: 3rem; color: #27ae60; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-leaf" style="color:#27ae60;"></i> Heritage Carbon Credits</h2>
+        <p class="text-muted mb-0">Creditos de carbono por restauracion sostenible</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="credit-card text-center">
+            <i class="bi bi-tree"></i>
+            <h2 class="mt-2">{{ total_creditos|floatformat:1 }}</h2>
+            <p class="mb-0">Toneladas CO2 Evitadas</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid #27ae60;">
+            <h2 style="color:#27ae60;">{{ creditos_validados|floatformat:1 }}</h2>
+            <p class="text-muted mb-0">Creditos Validados</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--gold);">
+            <h2 style="color:var(--gold);">{{ credits.count }}</h2>
+            <p class="text-muted mb-0">Certificados Emitidos</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="glass-card p-4">
+            <h5 class="mb-3"><i class="bi bi-list"></i> Certificados</h5>
+            <div class="table-responsive">
+                <table class="table table-custom">
+                    <thead><tr><th>Certificado</th><th>Edificio</th><th>Creditos</th><th>Metodo</th><th>Estado</th></tr></thead>
+                    <tbody>
+                        {% for c in credits %}
+                        <tr>
+                            <td class="fw-bold">{{ c.certificado }}</td>
+                            <td>{{ c.edificio.nombre }}</td>
+                            <td><strong style="color:#27ae60;">{{ c.creditos_generados }} tCO2</strong></td>
+                            <td>{{ c.get_metodo_calculo_display }}</td>
+                            <td><span class="badge {% if c.validado %}bg-success{% else %}bg-warning{% endif %}">
+                                {% if c.validado %}Validado{% else %}Pendiente{% endif %}
+                            </span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted">No hay certificados</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass-card p-4">
+            <h5><i class="bi bi-plus-circle"></i> Nuevo Carbon Credit</h5>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Edificio</label>
+                    <select name="edificio" class="form-select" required>
+                        {% for e in edificios %}<option value="{{ e.pk }}">{{ e.nombre }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Creditos (tCO2)</label>
+                    <input type="number" name="creditos" class="form-control" min="0" step="0.1" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Metodo</label>
+                    <select name="metodo" class="form-select">
+                        <option value="restauracion">Restauracion Sostenible</option>
+                        <option value="energia">Energia Renovable</option>
+                        <option value="materiales">Materiales Ecosostenibles</option>
+                        <option value="agua">Ahorro de Agua</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descripcion</label>
+                    <textarea name="descripcion" class="form-control" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus"></i> Registrar</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Simulador IoT - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .sensor-card { transition: all 0.3s; }
+    .sensor-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
+    .stream-live { max-height: 400px; overflow-y: auto; }
+    .lectura-item { animation: slideIn 0.3s ease; border-left: 3px solid var(--success); padding: 8px 12px; margin-bottom: 4px; border-radius: 0 8px 8px 0; background: rgba(255,255,255,0.03); }
+    .lectura-item.alerta { border-left-color: var(--danger); background: rgba(231,76,60,0.05); }
+    @keyframes slideIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-cpu" style="color:var(--accent);"></i> Simulador IoT</h2>
+        <p class="text-muted mb-0">Genera lecturas simuladas de sensores en tiempo real</p>
+    </div>
+    <a href="{% url 'monitor:dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--accent);">
+            <h2 style="color:var(--accent);">{{ stats.total_sensores }}</h2>
+            <p class="text-muted mb-0">Sensores Activos</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--gold);">
+            <h2 style="color:var(--gold);">{{ stats.total_lecturas_hoy }}</h2>
+            <p class="text-muted mb-0">Lecturas Hoy</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--success);">
+            <h2 style="color:var(--success);" id="sim-count">0</h2>
+            <p class="text-muted mb-0">Generadas Ahora</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--danger);">
+            <h2 style="color:var(--danger);" id="alert-count">0</h2>
+            <p class="text-muted mb-0">Alertas Generadas</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="glass-card">
+            <div class="p-3" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <h5 class="mb-0"><i class="bi bi-gear me-2" style="color:var(--accent);"></i>Control de Simulacion</h5>
+            </div>
+            <div class="p-4">
+                <form method="POST" id="sim-form">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Lecturas por sensor</label>
+                        <select name="count" class="form-select" id="sim-count-select">
+                            <option value="1">1 lectura</option>
+                            <option value="5" selected>5 lecturas</option>
+                            <option value="10">10 lecturas</option>
+                            <option value="25">25 lecturas</option>
+                            <option value="50">50 lecturas</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-glass w-100 mb-2" style="background:var(--accent);color:white;border:none;">
+                        <i class="bi bi-play-fill me-2"></i>Ejecutar Simulacion
+                    </button>
+                </form>
+                <hr style="border-color:rgba(255,255,255,0.05);">
+                <button class="btn btn-glass w-100 mb-2" onclick="simularAjax()">
+                    <i class="bi bi-lightning me-2"></i>Simulacion Ajax (1 lote)
+                </button>
+                <button class="btn btn-glass w-100" onclick="simularContinuo()" id="btn-continuo">
+                    <i class="bi bi-arrow-repeat me-2"></i>Simulacion Continua
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="glass-card">
+            <div class="p-3 d-flex justify-content-between align-items-center" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <h5 class="mb-0"><i class="bi bi-activity me-2" style="color:var(--accent);"></i>Stream en Vivo</h5>
+                <span class="badge bg-success rounded-pill" id="stream-status">Listo</span>
+            </div>
+            <div class="p-3 stream-live" id="stream-container">
+                <p class="text-muted text-center">Pulsa un boton para generar datos</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let simTotal = 0, alertTotal = 0, continuoInterval = null;
+
+function simularAjax() {
+    fetch('{% url "monitor:simulador_iot_stream" %}')
+        .then(r => r.json())
+        .then(data => {
+            data.lecturas.forEach(l => {
+                simTotal++;
+                if (l.es_alerta) alertTotal++;
+                addLectura(l);
+            });
+            document.getElementById('sim-count').textContent = simTotal;
+            document.getElementById('alert-count').textContent = alertTotal;
+        });
+}
+
+function addLectura(l) {
+    const container = document.getElementById('stream-container');
+    if (container.querySelector('.text-muted')) container.innerHTML = '';
+    const cls = l.es_alerta ? 'alerta' : '';
+    const html = `<div class="lectura-item ${cls}">
+        <div class="d-flex justify-content-between">
+            <div><strong>${l.sensor}</strong> <small class="text-muted">${l.tipo} - ${l.edificio}</small></div>
+            <span class="fw-bold ${l.es_alerta ? 'text-danger' : ''}">${l.valor} ${l.unidad}</span>
+        </div>
+    </div>`;
+    container.insertAdjacentHTML('afterbegin', html);
+    if (container.children.length > 50) container.removeChild(container.lastChild);
+}
+
+function simularContinuo() {
+    const btn = document.getElementById('btn-continuo');
+    if (continuoInterval) {
+        clearInterval(continuoInterval);
+        continuoInterval = null;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Simulacion Continua';
+        document.getElementById('stream-status').textContent = 'Pausado';
+        document.getElementById('stream-status').className = 'badge bg-warning rounded-pill';
+    } else {
+        continuoInterval = setInterval(simularAjax, 3000);
+        btn.innerHTML = '<i class="bi bi-pause-fill me-2"></i>Detener Continua';
+        document.getElementById('stream-status').textContent = 'En Vivo';
+        document.getElementById('stream-status').className = 'badge bg-success rounded-pill';
+    }
+}
+</script>
+{% endblock %}

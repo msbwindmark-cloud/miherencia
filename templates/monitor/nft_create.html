@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Crear NFT - SmartHeritage{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-plus-circle" style="color:var(--accent);"></i> Crear Heritage NFT</h2>
+        <p class="text-muted mb-0">Crea un NFT unico de {{ edificio.nombre }}</p>
+    </div>
+    <a href="{% url 'monitor:nft_marketplace' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="glass-card p-4">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Titulo del NFT</label>
+                    <input type="text" name="titulo" class="form-control" value="Heritage NFT - {{ edificio.nombre }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Descripcion</label>
+                    <textarea name="descripcion" class="form-control" rows="4" placeholder="Describe la historia y valor de este patrimonio..."></textarea>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Precio (EUR)</label>
+                        <input type="number" name="precio" class="form-control" value="100" min="1" step="0.01">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Imagen del NFT</label>
+                        <input type="file" name="imagen" class="form-control" accept="image/*">
+                    </div>
+                </div>
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" name="es_subasta" id="es-subasta">
+                    <label class="form-check-label" for="es-subasta">Crear como Subasta</label>
+                </div>
+                <button type="submit" class="btn btn-lg w-100" style="background:var(--gradient-accent); color:white;">
+                    <i class="bi bi-magic"></i> Crear NFT
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="glass-card p-4">
+            <h5><i class="bi bi-info-circle"></i> Info</h5>
+            <p class="small text-muted mt-3">El NFT se creara con un token ID unico y hash de contrato simulado.</p>
+            <p class="small text-muted">Podras venderlo, subastarlo o regalarlo desde el marketplace.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Smart Contracts - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .contract-timeline { position: relative; padding-left: 30px; }
+    .contract-timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--accent), var(--gold)); }
+    .hitos-item { position: relative; margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); }
+    .hitos-item::before { content: ''; position: absolute; left: -24px; top: 20px; width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--accent); background: white; }
+    .hitos-item.completado::before { background: var(--success); border-color: var(--success); }
+    .progress-ring { width: 60px; height: 60px; }
+    .blockchain-hash { font-family: monospace; font-size: 0.75rem; color: var(--gold); word-break: break-all; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-file-earmark-lock" style="color:var(--accent);"></i> Smart Contracts</h2>
+        <p class="text-muted mb-0">{{ edificio.nombre }} - Contratos inteligentes de restauracion</p>
+    </div>
+    <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        {% for c in contratos %}
+        <div class="glass-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h5 class="mb-1">{{ c.titulo }}</h5>
+                    <span class="badge bg-{{ c.estado|yesno:'success,primary,warning,danger' }}">{{ c.get_estado_display }}</span>
+                </div>
+                <div class="text-end">
+                    <div class="price-tag" style="font-size:1.5rem;">{{ c.monto_total|floatformat:0 }} EUR</div>
+                    <small class="text-muted">{{ c.porcentaje_completado }}% completado</small>
+                </div>
+            </div>
+            <p class="text-muted">{{ c.descripcion }}</p>
+            <div class="blockchain-hash mb-3"><i class="bi bi-hash"></i> {{ c.hash_blockchain }}</div>
+
+            <div class="progress mb-4" style="height:10px;">
+                <div class="progress-bar" style="width:{{ c.porcentaje_completado }}%; background:var(--gradient-accent);"></div>
+            </div>
+
+            <h6 class="mb-3"><i class="bi bi-list-check"></i> Hitos</h6>
+            <div class="contract-timeline">
+                {% for h in c.hitos.all %}
+                <div class="hitos-item {% if h.completado %}completado{% endif %}">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ h.titulo }}</strong>
+                        <span class="text-success fw-bold">{{ h.monto_liberar|floatformat:0 }} EUR</span>
+                    </div>
+                    <small class="text-muted">{{ h.descripcion }}</small>
+                    {% if not h.completado %}
+                    <form method="post" action="{% url 'monitor:hito_completar' pk=h.pk %}" class="mt-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-check-lg"></i> Completar</button>
+                    </form>
+                    {% else %}
+                    <small class="text-success"><i class="bi bi-check-circle-fill"></i> Completado {{ h.fecha_completado|date:"d/m/Y" }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="glass-card p-5 text-center">
+            <i class="bi bi-file-earmark-lock fs-1 text-muted"></i>
+            <p class="text-muted mt-2">No hay Smart Contracts para este edificio</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass-card p-4">
+            <h5><i class="bi bi-plus-circle"></i> Nuevo Contract</h5>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Titulo</label>
+                    <input type="text" name="titulo" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descripcion</label>
+                    <textarea name="descripcion" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Monto Total (EUR)</label>
+                    <input type="number" name="monto_total" class="form-control" min="0" step="0.01" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus"></i> Crear Contract</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

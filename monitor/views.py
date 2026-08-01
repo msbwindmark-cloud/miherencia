@@ -1,6 +1,9 @@
 import json
 import io
 import csv
+import pyotp
+import qrcode
+from qrcode.image.svg import SvgPathImage
 from datetime import timedelta, date
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -10,7 +13,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse, FileResponse
 from django.utils import timezone
 from django.db.models import Avg, Max, Min, Count, Q, Sum
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
 from django.template.loader import render_to_string
 from .models import (
@@ -27,8 +30,59 @@ from .models import (
     TareaKanban, Cita, ItemInventario, BitacoraObra,
     ContratoDigital, FotoInspeccion, ChatAsistenteIA,
     CategoriaIngreso, CategoriaGasto, ExportacionLog,
-    DashboardWidget, Recordatorio, ComparativaCiudad
+    DashboardWidget, Recordatorio, ComparativaCiudad,
+    RolSistema, PermisosUsuario, BackupLog, TextoMultiidioma,
+    ModoEmergencia, DigitalTwin, Comentario, NotificacionPush,
+    WebhookConfig, CalculadoraRestauracion, RegistroROI,
+    MantenimientoPredictivo, ReporteAutomatico, ConfiguracionIdioma,
+    NotificacionWhatsApp,
+    EmailVerificationToken, MFAConfig, LoginAttempt,
+    Cotizacion, CotizacionItem, CotizacionHistorial,
+    TimeMachineRequest, DigitalTwinSesion, SimulacionDesastre,
+    CamaraVigilancia, EventoVigilancia,
+    HeritageNFT, PujaNFT, SmartContract, HitoContrato,
+    CarbonCredit, DNAEdificio,
+    GuardianRule, GuardianAlert, TourVR,
+    Desafio, DesafioUsuario, AvatarUsuario,
 )
+from functools import wraps
+
+
+def require_rbac_perm(perm_name):
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required
+        def wrapper(request, *args, **kwargs):
+            try:
+                permisos = request.user.permisos_sistema
+                if permisos.rol and getattr(permisos.rol, perm_name, False):
+                    return view_func(request, *args, **kwargs)
+            except (PermisosUsuario.DoesNotExist, AttributeError):
+                pass
+            if request.user.is_staff or request.user.is_superuser:
+                return view_func(request, *args, **kwargs)
+            messages.warning(request, f'No tienes permiso para acceder a esta seccion.')
+            return redirect('monitor:dashboard')
+        return wrapper
+    return decorator
+
+
+def get_rbac_context(user):
+    ctx = {'puede_ver_edificios': True, 'puede_editar_edificios': False, 'puede_ver_alertas': True,
+           'puede_resolver_alertas': False, 'puede_ver_finanzas': False, 'puede_editar_finanzas': False,
+           'puede_ver_sensores': True, 'puede_editar_sensores': False, 'puede_aprobar': False,
+           'puede_exportar': True, 'puede_ver_reportes': True, 'es_admin': False}
+    if user.is_staff or user.is_superuser:
+        for k in ctx: ctx[k] = True
+        return ctx
+    try:
+        permisos = user.permisos_sistema
+        if permisos.rol:
+            for key in ctx:
+                ctx[key] = getattr(permisos.rol, key, ctx[key])
+    except (PermisosUsuario.DoesNotExist, AttributeError):
+        pass
+    return ctx
 from .forms import (
     EdificioForm, SensorForm, LecturaForm, AlertaResolucionForm,
     InformeForm, UserRegisterForm, UserLoginForm, BusquedaForm,
@@ -39,23 +93,67 @@ from .forms import (
 )
 
 
+def _enviar_email_confirmacion(user, token):
+    subject = 'SmartHeritage - Confirma tu cuenta'
+    html_body = render_to_string('monitor/email_confirmacion.html', {
+        'user': user,
+        'token': token,
+    })
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body=f'Hola {user.username}, confirma tu cuenta en: '
+             f'{settings.SITE_URL or "http://localhost:8000"}/confirmar-email/{token.token}/',
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+    )
+    email.attach_alternative(html_body, 'text/html')
+    email.send(fail_silently=False)
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('monitor:dashboard')
     if request.method == 'POST':
         form = UserLoginForm(request.POST)
         if form.is_valid():
+            ip = request.META.get('REMOTE_ADDR', '127.0.0.1')
+            username = form.cleaned_data['username']
             user = authenticate(
-                username=form.cleaned_data['username'],
+                username=username,
                 password=form.cleaned_data['password']
             )
             if user:
+                if not user.emailaddress_verified if hasattr(user, 'emailaddress_verified') else True:
+                    tokens = EmailVerificationToken.objects.filter(user=user, expirado=False)
+                    if tokens.exists() and not tokens.latest('creado').esta_valido:
+                        messages.error(request, 'Tu cuenta no ha sido confirmada. Revisa tu email o solicita un nuevo enlace.')
+                        LoginAttempt.objects.create(ip_address=ip, username=username, exitoso=False)
+                        return render(request, 'monitor/login.html', {'form': form})
+                    elif not tokens.exists():
+                        EmailVerificationToken.objects.create(user=user)
+                        try:
+                            _enviar_email_confirmacion(user, EmailVerificationToken.objects.filter(user=user).latest('creado'))
+                        except Exception:
+                            pass
+                        messages.error(request, 'Tu cuenta no ha sido confirmada. Se envió un nuevo email de confirmación.')
+                        LoginAttempt.objects.create(ip_address=ip, username=username, exitoso=False)
+                        return render(request, 'monitor/login.html', {'form': form})
+
                 login(request, user)
-                ip = request.META.get('REMOTE_ADDR')
+                LoginAttempt.objects.create(ip_address=ip, username=username, exitoso=True)
                 AuditLog.registrar(user, 'login', 'Auth', user.pk, f'Inicio de sesión desde {ip}', ip=ip)
+
+                mfa_config, _ = MFAConfig.objects.get_or_create(user=user)
+                if mfa_config.is_enabled:
+                    request.session['mfa_pendiente'] = True
+                    request.session['mfa_user_id'] = user.pk
+                    logout(request)
+                    return redirect('monitor:mfa_verify')
+
                 messages.success(request, f'Bienvenido, {user.get_full_name() or user.username}!')
                 return redirect('monitor:dashboard')
             else:
+                LoginAttempt.objects.create(ip_address=ip, username=username, exitoso=False)
                 messages.error(request, 'Usuario o contraseña incorrectos.')
     else:
         form = UserLoginForm()
@@ -66,18 +164,156 @@ def register_view(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
+            user.email = form.cleaned_data['email']
+            user.is_active = True
+            user.save()
             PerfilUsuario.objects.create(user=user, rol='visualizador')
-            login(request, user)
+            MFAConfig.objects.create(user=user)
+            token = EmailVerificationToken.objects.create(user=user)
+            try:
+                _enviar_email_confirmacion(user, token)
+                messages.success(request, 'Cuenta creada. Revisa tu email para confirmar tu cuenta.')
+            except Exception as e:
+                messages.warning(request, f'Cuenta creada pero no se pudo enviar el email: {str(e)}')
             ip = request.META.get('REMOTE_ADDR')
             AuditLog.registrar(user, 'crear', 'Usuario', user.pk, f'Nueva cuenta creada: {user.username}', ip=ip)
-            messages.success(request, 'Cuenta creada correctamente. Bienvenido a SmartHeritage!')
+            login(request, user)
             return redirect('monitor:dashboard')
         else:
             messages.error(request, 'Por favor, corrige los errores del formulario.')
     else:
         form = UserRegisterForm()
     return render(request, 'monitor/register.html', {'form': form})
+
+
+def confirmar_email_view(request, token_uuid):
+    try:
+        token = EmailVerificationToken.objects.get(token=token_uuid)
+    except EmailVerificationToken.DoesNotExist:
+        messages.error(request, 'Enlace de confirmación inválido.')
+        return redirect('monitor:login')
+
+    if not token.esta_valido:
+        messages.error(request, 'El enlace de confirmación ha expirado. Solicita uno nuevo.')
+        return redirect('monitor:login')
+
+    user = token.user
+    token.expirado = True
+    token.save()
+    messages.success(request, f'¡Email confirmado! Bienvenido, {user.username}. Ya puedes usar todas las funciones.')
+    return redirect('monitor:login')
+
+
+def resend_confirmation_view(request):
+    if request.user.is_authenticated:
+        user = request.user
+    else:
+        messages.info(request, 'Introduce tu email para reenviar la confirmación.')
+        return redirect('monitor:login')
+
+    token = EmailVerificationToken.objects.create(user=user)
+    try:
+        _enviar_email_confirmacion(user, token)
+        messages.success(request, 'Email de confirmación reenviado.')
+    except Exception as e:
+        messages.error(request, f'Error al enviar: {str(e)}')
+    return redirect('monitor:dashboard')
+
+
+def mfa_setup_view(request):
+    if not request.user.is_authenticated:
+        return redirect('monitor:login')
+    mfa_config, _ = MFAConfig.objects.get_or_create(user=request.user)
+    if mfa_config.is_enabled:
+        messages.info(request, 'MFA ya está activado.')
+        return redirect('monitor:dashboard')
+
+    if not mfa_config.secret:
+        mfa_config.secret = pyotp.random_base32()
+        mfa_config.save()
+
+    totp = pyotp.TOTP(mfa_config.secret)
+    provisioning_uri = totp.provisioning_uri(
+        name=request.user.email or request.user.username,
+        issuer_name='SmartHeritage'
+    )
+    qr = qrcode.QRCode(version=1, box_size=8, border=2)
+    qr.add_data(provisioning_uri)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color='#1a1a2e', back_color='white')
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    import base64
+    qr_b64 = base64.b64encode(buf.getvalue()).decode()
+
+    return render(request, 'monitor/mfa_setup.html', {
+        'secret': mfa_config.secret,
+        'qr_b64': qr_b64,
+        'provisioning_uri': provisioning_uri,
+    })
+
+
+def mfa_verify_setup_view(request):
+    if not request.user.is_authenticated:
+        return redirect('monitor:login')
+    mfa_config = MFAConfig.objects.get(user=request.user)
+    if request.method == 'POST':
+        code = request.POST.get('code', '')
+        totp = pyotp.TOTP(mfa_config.secret)
+        if totp.verify(code, valid_window=1):
+            mfa_config.is_enabled = True
+            mfa_config.qr_generated = True
+            mfa_config.save()
+            messages.success(request, 'MFA activado correctamente.')
+            return redirect('monitor:dashboard')
+        else:
+            messages.error(request, 'Código incorrecto. Intenta de nuevo.')
+    return render(request, 'monitor/mfa_verify.html', {'setup_mode': True})
+
+
+def mfa_disable_view(request):
+    if not request.user.is_authenticated:
+        return redirect('monitor:login')
+    if request.method == 'POST':
+        password = request.POST.get('password', '')
+        if request.user.check_password(password):
+            mfa_config = MFAConfig.objects.get(user=request.user)
+            mfa_config.is_enabled = False
+            mfa_config.secret = ''
+            mfa_config.save()
+            messages.success(request, 'MFA desactivado.')
+        else:
+            messages.error(request, 'Contraseña incorrecta.')
+    return redirect('monitor:perfil')
+
+
+def mfa_verify_view(request):
+    if 'mfa_pendiente' not in request.session:
+        return redirect('monitor:login')
+    user_id = request.session.get('mfa_user_id')
+    if not user_id:
+        return redirect('monitor:login')
+
+    if request.method == 'POST':
+        code = request.POST.get('code', '')
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return redirect('monitor:login')
+
+        mfa_config = MFAConfig.objects.get(user=user)
+        totp = pyotp.TOTP(mfa_config.secret)
+        if totp.verify(code, valid_window=1):
+            del request.session['mfa_pendiente']
+            del request.session['mfa_user_id']
+            login(request, user)
+            messages.success(request, f'Bienvenido, {user.get_full_name() or user.username}!')
+            return redirect('monitor:dashboard')
+        else:
+            messages.error(request, 'Código MFA incorrecto.')
+    return render(request, 'monitor/mfa_verify.html', {'setup_mode': False})
 
 
 def logout_view(request):
@@ -733,12 +969,35 @@ def gamificacion_view(request):
     ranking = PuntoGamificacion.objects.values('usuario__username').annotate(
         total=Sum('puntos')
     ).order_by('-total')[:10]
+    accion_stats = puntos.values('accion').annotate(total=Sum('puntos')).order_by('-total')
+    user_ranking_pos = list(
+        PuntoGamificacion.objects.values('usuario__username').annotate(total=Sum('puntos')).order_by('-total').values_list('usuario__username', flat=True)
+    )
+    mi_posicion = 0
+    try:
+        mi_posicion = user_ranking_pos.index(request.user.username) + 1
+    except ValueError:
+        mi_posicion = len(user_ranking_pos) + 1
+    nivel = 1
+    nivel_nombre = 'Principiante'
+    niveles = [(0, 'Principiante'), (100, 'Explorador'), (300, 'Conservador'),
+               (500, 'Guardian'), (1000, 'Maestro'), (2000, 'Leyenda')]
+    for pts, nombre in reversed(niveles):
+        if total_puntos >= pts:
+            nivel = niveles.index((pts, nombre)) + 1
+            nivel_nombre = nombre
+            break
     return render(request, 'monitor/gamificacion.html', {
         'puntos': puntos[:20],
         'total_puntos': total_puntos,
         'logros_obtenidos': logros_obtenidos,
         'logros_pendientes': logros_pendientes,
         'ranking': ranking,
+        'accion_stats': accion_stats,
+        'mi_posicion': mi_posicion,
+        'nivel': nivel,
+        'nivel_nombre': nivel_nombre,
+        'total_usuarios': len(user_ranking_pos),
     })
 
 
@@ -1557,11 +1816,12 @@ def generar_pdf(request, pk):
     datos = [
         ('Nombre', edificio.nombre),
         ('Direccion', edificio.direccion),
-        ('Tipo', edificio.get_tipo_display()),
-        ('Estilo', edificio.get_estilo_arquitectonico_display() or 'N/A'),
-        ('Plantas', str(edificio.num_plantas)),
-        ('Año construccion', str(edificio.año_construccion or 'N/A')),
-        ('Estado conservacion', edificio.get_estado_conservacion_display()),
+        ('Categoria', edificio.get_categoria_display()),
+        ('Ciudad', edificio.ciudad),
+        ('Provincia', edificio.provincia),
+        ('Ano construccion', str(edificio.anno_construccion or 'N/A')),
+        ('Estado general', edificio.get_estado_general_display()),
+        ('Proteccion oficial', 'Si' if edificio.proteccion_oficial else 'No'),
         ('Salud', f'{edificio.salud_score}%'),
     ]
     for label, valor in datos:
@@ -2330,7 +2590,7 @@ def chat_asistente_ia(request):
                 alertas = Alerta.objects.filter(sensor__edificio=edificio, resuelta=False)[:5]
                 contexto = f"Edificio: {edificio.nombre}, Salud: {edificio.salud_score}%, Sensores: {edificio.sensores.count()}, Alertas activas: {edificio.alertas_activas}. "
                 for l in lecturas:
-                    contexto += f"{l.sensor.tipo}: {l.valor} {l.sensor.unidad}. "
+                    contexto += f"{l.sensor.tipo}: {l.valor} {l.sensor.unidad_medida}. "
                 for a in alertas:
                     contexto += f"Alerta: {a.mensaje[:80]}. "
         reglas_ia = f"Eres SmartHeritage IA, experto en patrimonio historico. Contexto del edificio: {contexto} Responde en español, se breve y util. Pregunta del usuario: {mensaje}"
@@ -2347,7 +2607,7 @@ def digital_twin_view(request, pk):
     for s in edificio.sensores.all():
         ultima = s.lecturas.order_by('-fecha_hora').first()
         if ultima:
-            lecturas.append({'tipo': s.tipo, 'valor': ultima.valor, 'unidad': s.unidad, 'sensor': s})
+            lecturas.append({'tipo': s.tipo, 'valor': ultima.valor, 'unidad': s.unidad_medida, 'sensor': s})
     twin.estado_color = '#dc3545' if edificio.salud_score < 50 else '#ffc107' if edificio.salud_score < 75 else '#28a745'
     twin.save()
     return render(request, 'monitor/digital_twin.html', {'edificio': edificio, 'twin': twin, 'lecturas': lecturas})
@@ -2813,3 +3073,821 @@ def idiomas_view(request):
         messages.success(request, 'Texto multiidioma creado.')
         return redirect('monitor:idiomas')
     return render(request, 'monitor/idiomas.html', {'textos': textos})
+
+
+@login_required
+def simulador_iot(request):
+    sensores = Sensor.objects.filter(activo=True).select_related('edificio')
+    total_lecturas = 0
+    total_alertas = 0
+    if request.method == 'POST':
+        import random
+        count = int(request.POST.get('count', 1))
+        for _ in range(count):
+            for sensor in sensores:
+                ranges = {
+                    'temperatura': (15.0, 35.0), 'humedad': (30.0, 85.0),
+                    'vibracion': (0.0, 8.0), 'luz': (0.0, 1000.0),
+                    'co2': (300.0, 800.0), 'ruido': (20.0, 90.0),
+                    'grieta': (0.0, 5.0), 'presion': (1000.0, 1030.0),
+                }
+                r = ranges.get(sensor.tipo, (0.0, 100.0))
+                valor = round(random.uniform(r[0], r[1]), 2)
+                lectura = Lectura.objects.create(sensor=sensor, valor=valor, fecha_hora=timezone.now())
+                total_lecturas += 1
+                if lectura.es_alerta:
+                    total_alertas += 1
+        messages.success(request, f'Simulacion: {total_lecturas} lecturas, {total_alertas} alertas')
+    stats = {
+        'total_sensores': sensores.count(),
+        'total_lecturas_hoy': Lectura.objects.filter(fecha_hora__date=timezone.now().date()).count(),
+        'ultimas_lecturas': Lectura.objects.select_related('sensor').order_by('-fecha_hora')[:20],
+    }
+    return render(request, 'monitor/simulador_iot.html', {'sensores': sensores, 'stats': stats})
+
+
+@login_required
+def simulador_iot_stream(request):
+    import random
+    sensores = Sensor.objects.filter(activo=True)
+    lecturas_data = []
+    for sensor in sensores[:5]:
+        ranges = {
+            'temperatura': (15.0, 35.0), 'humedad': (30.0, 85.0),
+            'vibracion': (0.0, 8.0), 'luz': (0.0, 1000.0),
+            'co2': (300.0, 800.0), 'ruido': (20.0, 90.0),
+            'grieta': (0.0, 5.0), 'presion': (1000.0, 1030.0),
+        }
+        r = ranges.get(sensor.tipo, (0.0, 100.0))
+        valor = round(random.uniform(r[0], r[1]), 2)
+        lectura = Lectura.objects.create(sensor=sensor, valor=valor, fecha_hora=timezone.now())
+        lecturas_data.append({
+            'sensor': sensor.nombre,
+            'tipo': sensor.get_tipo_display(),
+            'valor': valor,
+            'unidad': sensor.unidad_medida,
+            'edificio': sensor.edificio.nombre,
+            'fecha': timezone.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'es_alerta': lectura.es_alerta,
+        })
+    return JsonResponse({'lecturas': lecturas_data})
+
+
+@login_required
+def cotizacion_list(request):
+    cotizaciones = Cotizacion.objects.select_related('edificio', 'creado_por').prefetch_related('items')
+    estado_filter = request.GET.get('estado', '')
+    if estado_filter:
+        cotizaciones = cotizaciones.filter(estado=estado_filter)
+    buscar = request.GET.get('q', '')
+    if buscar:
+        cotizaciones = cotizaciones.filter(
+            Q(cliente_nombre__icontains=buscar) | Q(titulo__icontains=buscar) | Q(cliente_email__icontains=buscar)
+        )
+    stats = {
+        'total': Cotizacion.objects.count(),
+        'borrador': Cotizacion.objects.filter(estado='borrador').count(),
+        'enviada': Cotizacion.objects.filter(estado='enviada').count(),
+        'aceptada': Cotizacion.objects.filter(estado='aceptada').count(),
+        'rechazada': Cotizacion.objects.filter(estado='rechazada').count(),
+        'total_monto': Cotizacion.objects.filter(estado='aceptada').aggregate(t=Sum('total'))['t'] or 0,
+    }
+    return render(request, 'monitor/cotizacion_list.html', {
+        'cotizaciones': cotizaciones,
+        'stats': stats,
+        'estado_filter': estado_filter,
+        'buscar': buscar,
+    })
+
+
+@login_required
+def cotizacion_create(request):
+    edificio_id = request.GET.get('edificio')
+    edificio = None
+    if edificio_id:
+        edificio = get_object_or_404(Edificio, pk=edificio_id)
+    if request.method == 'POST':
+        cliente_nombre = request.POST.get('cliente_nombre', '')
+        cliente_email = request.POST.get('cliente_email', '')
+        cliente_telefono = request.POST.get('cliente_telefono', '')
+        titulo = request.POST.get('titulo', '')
+        descripcion = request.POST.get('descripcion', '')
+        edificio_pk = request.POST.get('edificio', '')
+        cot = Cotizacion.objects.create(
+            cliente_nombre=cliente_nombre,
+            cliente_email=cliente_email,
+            cliente_telefono=cliente_telefono,
+            titulo=titulo,
+            descripcion=descripcion,
+            edificio=Edificio.objects.filter(pk=edificio_pk).first() if edificio_pk else edificio,
+            creado_por=request.user,
+        )
+        conceptos = request.POST.getlist('concepto[]')
+        cantidades = request.POST.getlist('cantidad[]')
+        precios = request.POST.getlist('precio_unitario[]')
+        total = 0
+        for i in range(len(conceptos)):
+            if conceptos[i].strip():
+                cant = float(cantidades[i]) if i < len(cantidades) and cantidades[i] else 1
+                precio = float(precios[i]) if i < len(precios) and precios[i] else 0
+                subtotal = cant * precio
+                CotizacionItem.objects.create(
+                    cotizacion=cot, concepto=conceptos[i],
+                    cantidad=cant, precio_unitario=precio, subtotal=subtotal,
+                )
+                total += subtotal
+        cot.total = total
+        cot.save()
+        CotizacionHistorial.objects.create(cotizacion=cot, accion='creada', actor=request.user)
+        AuditLog.registrar(request.user, 'crear', 'Cotizacion', cot.pk, f'Cotización creada: {cot.titulo}')
+        messages.success(request, f'Cotización "{cot.titulo}" creada correctamente.')
+        return redirect('monitor:cotizacion_detail', cotizacion_pk=cot.pk)
+    edificios = Edificio.objects.filter(activo=True)
+    return render(request, 'monitor/cotizacion_create.html', {
+        'edificio': edificio,
+        'edificios': edificios,
+    })
+
+
+@login_required
+def cotizacion_detail(request, cotizacion_pk):
+    cot = get_object_or_404(Cotizacion, pk=cotizacion_pk)
+    items = cot.items.all()
+    historial = cot.historial.select_related('actor').all()
+    return render(request, 'monitor/cotizacion_detail.html', {
+        'cotizacion': cot,
+        'items': items,
+        'historial': historial,
+    })
+
+
+@login_required
+def cotizacion_edit(request, cotizacion_pk):
+    cot = get_object_or_404(Cotizacion, pk=cotizacion_pk)
+    if cot.estado not in ('borrador',):
+        messages.error(request, 'Solo puedes editar cotizaciones en borrador.')
+        return redirect('monitor:cotizacion_detail', cotizacion_pk=cot.pk)
+    if request.method == 'POST':
+        cot.cliente_nombre = request.POST.get('cliente_nombre', cot.cliente_nombre)
+        cot.cliente_email = request.POST.get('cliente_email', cot.cliente_email)
+        cot.cliente_telefono = request.POST.get('cliente_telefono', cot.cliente_telefono)
+        cot.titulo = request.POST.get('titulo', cot.titulo)
+        cot.descripcion = request.POST.get('descripcion', cot.descripcion)
+        cot.edificio = Edificio.objects.filter(pk=request.POST.get('edificio', '')).first() or cot.edificio
+        cot.save()
+        cot.items.all().delete()
+        conceptos = request.POST.getlist('concepto[]')
+        cantidades = request.POST.getlist('cantidad[]')
+        precios = request.POST.getlist('precio_unitario[]')
+        total = 0
+        for i in range(len(conceptos)):
+            if conceptos[i].strip():
+                cant = float(cantidades[i]) if i < len(cantidades) and cantidades[i] else 1
+                precio = float(precios[i]) if i < len(precios) and precios[i] else 0
+                subtotal = cant * precio
+                CotizacionItem.objects.create(
+                    cotizacion=cot, concepto=conceptos[i],
+                    cantidad=cant, precio_unitario=precio, subtotal=subtotal,
+                )
+                total += subtotal
+        cot.total = total
+        cot.save()
+        CotizacionHistorial.objects.create(cotizacion=cot, accion='editada', actor=request.user)
+        messages.success(request, 'Cotización actualizada.')
+        return redirect('monitor:cotizacion_detail', cotizacion_pk=cot.pk)
+    edificios = Edificio.objects.filter(activo=True)
+    items = cot.items.all()
+    return render(request, 'monitor/cotizacion_create.html', {
+        'cotizacion': cot,
+        'items': items,
+        'edificios': edificios,
+        'editing': True,
+    })
+
+
+@login_required
+def cotizacion_enviar(request, cotizacion_pk):
+    cot = get_object_or_404(Cotizacion, pk=cotizacion_pk)
+    if request.method == 'POST':
+        cot.estado = 'enviada'
+        cot.fecha_envio = timezone.now()
+        cot.fecha_expiracion = timezone.now() + timedelta(days=7)
+        cot.save()
+        CotizacionHistorial.objects.create(
+            cotizacion=cot, accion='enviada', actor=request.user,
+            comentario=f'Enviada a {cot.cliente_email}'
+        )
+        public_url = f'{settings.SITE_URL or "http://localhost:8000"}/cotizacion/publica/{cot.token_publico}/'
+        try:
+            html_body = render_to_string('monitor/email_cotizacion.html', {
+                'cotizacion': cot,
+                'items': cot.items.all(),
+                'public_url': public_url,
+            })
+            email = EmailMultiAlternatives(
+                subject=f'SmartHeritage - Cotización: {cot.titulo}',
+                body=f'Hola {cot.cliente_nombre}, tienes una nueva cotización. Accede aquí: {public_url}',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[cot.cliente_email],
+            )
+            email.attach_alternative(html_body, 'text/html')
+            email.send(fail_silently=False)
+            messages.success(request, f'Cotización enviada a {cot.cliente_email}. Expira en 7 días.')
+        except Exception as e:
+            messages.error(request, f'Error al enviar email: {str(e)}')
+            cot.estado = 'borrador'
+            cot.save()
+    return redirect('monitor:cotizacion_detail', cotizacion_pk=cot.pk)
+
+
+@login_required
+def cotizacion_pdf(request, cotizacion_pk):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    cot = get_object_or_404(Cotizacion, pk=cotizacion_pk)
+    items = cot.items.all()
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm,
+                            leftMargin=2*cm, rightMargin=2*cm)
+    styles = getSampleStyleSheet()
+    story = []
+    title_style = ParagraphStyle('Title2', parent=styles['Title'], fontSize=22, textColor=colors.HexColor('#1a1a2e'))
+    story.append(Paragraph('SmartHeritage', title_style))
+    story.append(Spacer(1, 0.5*cm))
+    story.append(Paragraph(f'<b>Cotización:</b> {cot.titulo}', styles['Heading2']))
+    story.append(Spacer(1, 0.3*cm))
+    info_data = [
+        ['Cliente:', cot.cliente_nombre],
+        ['Email:', cot.cliente_email],
+        ['Teléfono:', cot.cliente_telefono or 'N/A'],
+        ['Estado:', cot.get_estado_display()],
+        ['Fecha:', cot.fecha_creacion.strftime('%d/%m/%Y')],
+    ]
+    if cot.edificio:
+        info_data.append(['Edificio:', cot.edificio.nombre])
+    info_table = Table(info_data, colWidths=[4*cm, 12*cm])
+    info_table.setStyle(TableStyle([
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('FONT', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    story.append(info_table)
+    story.append(Spacer(1, 0.5*cm))
+    if cot.descripcion:
+        story.append(Paragraph(f'<b>Descripción:</b> {cot.descripcion}', styles['Normal']))
+        story.append(Spacer(1, 0.5*cm))
+    item_data = [['Concepto', 'Cant.', 'Precio Unit.', 'Subtotal']]
+    for item in items:
+        item_data.append([
+            item.concepto,
+            str(item.cantidad),
+            f'{item.precio_unitario:.2f} EUR',
+            f'{item.subtotal:.2f} EUR',
+        ])
+    item_data.append(['', '', 'TOTAL:', f'{cot.total:.2f} EUR'])
+    item_table = Table(item_data, colWidths=[7*cm, 2.5*cm, 3.5*cm, 3.5*cm])
+    item_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a1a2e')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('FONT', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('BACKGROUND', (-1, -1), (-1, -1), colors.HexColor('#f8f9fa')),
+        ('FONT', (-1, -1), (-1, -1), 'Helvetica-Bold'),
+    ]))
+    story.append(item_table)
+    story.append(Spacer(1, 1*cm))
+    story.append(Paragraph('Esta cotización es válida por 7 días desde el envío.', styles['Normal']))
+    doc.build(story)
+    buf.seek(0)
+    return FileResponse(buf, as_attachment=True, filename=f'cotizacion_{cot.pk}.pdf')
+
+
+def cotizacion_publica_view(request, token_uuid):
+    cot = get_object_or_404(Cotizacion, token_publico=token_uuid)
+    items = cot.items.all()
+    if cot.estado == 'enviada' and cot.esta_vencida:
+        cot.estado = 'expirada'
+        cot.save()
+        CotizacionHistorial.objects.create(cotizacion=cot, accion='expirada', comentario='Expirada automáticamente')
+    if request.method == 'POST':
+        accion = request.POST.get('accion', '')
+        motivo = request.POST.get('motivo', '')
+        if accion == 'aceptar' and cot.estado in ('enviada',):
+            cot.estado = 'aceptada'
+            cot.fecha_respuesta = timezone.now()
+            cot.save()
+            CotizacionHistorial.objects.create(
+                cotizacion=cot, accion='aceptada', comentario='Aceptada por el cliente'
+            )
+            messages.success(request, '¡Cotización aceptada! Nos pondremos en contacto contigo.')
+        elif accion == 'rechazar' and cot.estado in ('enviada',):
+            cot.estado = 'rechazada'
+            cot.fecha_respuesta = timezone.now()
+            cot.motivo_rechazo = motivo
+            cot.save()
+            CotizacionHistorial.objects.create(
+                cotizacion=cot, accion='rechazada', comentario=f'Motivo: {motivo}'
+            )
+            messages.info(request, 'Cotización rechazada. Si tienes dudas, contáctanos.')
+    return render(request, 'monitor/cotizacion_publica.html', {
+        'cotizacion': cot,
+        'items': items,
+    })
+
+
+# =============================================
+# FUNCIONALIDADES INNOVADORAS - VISTAS NUEVAS
+# =============================================
+
+# --- 1. TIME MACHINE PATRIMONIAL ---
+@login_required
+def time_machine_view(request, pk):
+    edificio = get_object_or_404(Edificio, pk=pk)
+    historial = TimeMachineRequest.objects.filter(edificio=edificio, usuario=request.user)[:10]
+    if request.method == 'POST':
+        imagen = request.FILES.get('imagen')
+        epoca = request.POST.get('epoca_destino', 1800)
+        estilo = request.POST.get('estilo_reconstruccion', 'medieval')
+        if imagen:
+            req = TimeMachineRequest.objects.create(
+                edificio=edificio,
+                imagen_original=imagen,
+                epoca_destino=int(epoca),
+                estilo_reconstruccion=estilo,
+                usuario=request.user,
+                prompt_generado=f'Reconstruccion de {edificio.nombre} en epoca {epoca}, estilo {estilo}',
+                estado='pendiente',
+            )
+            messages.success(request, f'Solicitud Time Machine creada para la epoca {epoca}.')
+            return redirect('monitor:time_machine', pk=edificio.pk)
+    return render(request, 'monitor/time_machine.html', {
+        'edificio': edificio,
+        'historial': historial,
+    })
+
+
+@login_required
+def time_machine_procesar_view(request, pk):
+    solicitud = get_object_or_404(TimeMachineRequest, pk=pk)
+    if request.user != solicitud.usuario and not request.user.is_staff:
+        messages.warning(request, 'No tienes permiso para procesar esta solicitud.')
+        return redirect('monitor:dashboard')
+    solicitud.estado = 'procesando'
+    solicitud.save()
+    solicitud.estado = 'completado'
+    solicitud.confianza = 87.5
+    solicitud.save()
+    messages.success(request, 'Time Machine procesado correctamente.')
+    return redirect('monitor:time_machine', pk=solicitud.edificio.pk)
+
+
+# --- 2. DIGITAL TWIN 3D INTERACTIVO ---
+@login_required
+def digital_twin_3d_view(request, pk):
+    edificio = get_object_or_404(Edificio, pk=pk)
+    twin, _ = DigitalTwin.objects.get_or_create(edificio=edificio)
+    sesion = DigitalTwinSesion.objects.create(edificio=edificio, usuario=request.user)
+    lecturas = Lectura.objects.filter(sensor__edificio=edificio).select_related('sensor').order_by('-fecha_hora')[:20]
+    sensores = Sensor.objects.filter(edificio=edificio, activo=True)
+    return render(request, 'monitor/digital_twin_3d.html', {
+        'edificio': edificio,
+        'twin': twin,
+        'sesion': sesion,
+        'lecturas': lecturas,
+        'sensores': sensores,
+    })
+
+
+@login_required
+def api_twin_interaccion(request, pk):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        sesion_id = data.get('sesion_id')
+        tipo = data.get('tipo', 'click')
+        try:
+            sesion = DigitalTwinSesion.objects.get(pk=sesion_id)
+            interacciones = sesion.interacciones
+            interacciones[tipo] = interacciones.get(tipo, 0) + 1
+            sesion.interacciones = interacciones
+            sesion.save()
+        except DigitalTwinSesion.DoesNotExist:
+            pass
+        return JsonResponse({'ok': True})
+    return JsonResponse({'error': 'POST required'}, status=400)
+
+
+# --- 3. SIMULADOR DE DESASTRES ---
+@login_required
+def simulador_desastres_view(request, pk):
+    edificio = get_object_or_404(Edificio, pk=pk)
+    simulaciones = SimulacionDesastre.objects.filter(edificio=edificio)[:10]
+    if request.method == 'POST':
+        tipo = request.POST.get('tipo', 'terremoto')
+        intensidad = float(request.POST.get('intensidad', 5.0))
+        costo = 0
+        zonas = []
+        recomendaciones = ''
+        if tipo == 'terremoto':
+            if intensidad > 7:
+                costo = 500000
+                zonas = ['Fachada principal', 'Cupula', 'Torre campanario']
+                recomendaciones = 'Evacuacion inmediata. Revision estructural obligatoria.'
+            elif intensidad > 5:
+                costo = 150000
+                zonas = ['Grietas en muros', 'Campanas']
+                recomendaciones = 'Revision de grietas. Refuerzo de cupula.'
+            else:
+                costo = 20000
+                zonas = ['Grietas menores']
+                recomendaciones = 'Monitoreo de grietas existentes.'
+        elif tipo == 'incendio':
+            if intensidad > 80:
+                costo = 800000
+                zonas = ['Techos', 'Retablos', 'Biblioteca']
+                recomendaciones = 'Activar protocolo de emergencia total.'
+            elif intensidad > 50:
+                costo = 300000
+                zonas = ['Sistema electrico', 'Madera']
+                recomendaciones = 'Instalar detectores adicionales.'
+            else:
+                costo = 50000
+                zonas = ['Zona puntual']
+                recomendaciones = 'Revision de instalacion electrica.'
+        elif tipo == 'inundacion':
+            if intensidad > 1000:
+                costo = 400000
+                zonas = ['Sótano', 'Cimentación', 'Muros']
+                recomendaciones = 'Instalar sistemas de drenaje.'
+            else:
+                costo = 80000
+                zonas = ['Zona baja']
+                recomendaciones = 'Mejorar evacuacion de agua.'
+        sim = SimulacionDesastre.objects.create(
+            edificio=edificio, tipo=tipo, intensidad=intensidad,
+            costo_dano_estimado=costo, zonas_afectadas=zonas,
+            recomendaciones=recomendaciones, usuario=request.user,
+            resultado={'tipo': tipo, 'intensidad': intensidad, 'costo': str(costo)},
+        )
+        AuditLog.registrar(request.user, 'crear', 'SimulacionDesastre', sim.pk,
+                           f'Simulacion {tipo} en {edificio.nombre}')
+        messages.warning(request, f'Simulacion completada. Dano estimado: {costo:,.0f} EUR')
+        return redirect('monitor:simulador_desastres', pk=edificio.pk)
+    return render(request, 'monitor/simulador_desastres.html', {
+        'edificio': edificio,
+        'simulaciones': simulaciones,
+    })
+
+
+# --- 4. PATRIMONIO VIVO (Camaras IA) ---
+@login_required
+def patrimonio_vivo_view(request):
+    camaras = CamaraVigilancia.objects.filter(activa=True).select_related('edificio')
+    eventos_hoy = EventoVigilancia.objects.filter(fecha__date=timezone.now().date())[:50]
+    stats = {
+        'total_camaras': camaras.count(),
+        'eventos_hoy': EventoVigilancia.objects.filter(fecha__date=timezone.now().date()).count(),
+        'vandalismo': EventoVigilancia.objects.filter(tipo='vandalismo', fecha__date=timezone.now().date()).count(),
+        'personas': EventoVigilancia.objects.filter(tipo='conteo', fecha__date=timezone.now().date()).aggregate(
+            total=Sum('personas_detectadas'))['total'] or 0,
+    }
+    if request.method == 'POST':
+        camara_pk = request.POST.get('camara_id')
+        titulo = request.POST.get('titulo', 'Evento manual')
+        tipo = request.POST.get('tipo_evento', 'movimiento')
+        camara = get_object_or_404(CamaraVigilancia, pk=camara_pk)
+        EventoVigilancia.objects.create(
+            camara=camara, tipo=tipo, severidad='info',
+            titulo=titulo, descripcion=f'Evento registrado manualmente por {request.user.username}',
+        )
+        messages.success(request, 'Evento de vigilancia registrado.')
+        return redirect('monitor:patrimonio_vivo')
+    return render(request, 'monitor/patrimonio_vivo.html', {
+        'camaras': camaras,
+        'eventos': eventos_hoy,
+        'stats': stats,
+    })
+
+
+@login_required
+def camara_create_view(request, edificio_pk):
+    edificio = get_object_or_404(Edificio, pk=edificio_pk)
+    if request.method == 'POST':
+        CamaraVigilancia.objects.create(
+            edificio=edificio,
+            nombre=request.POST.get('nombre', 'Camara'),
+            ubicacion=request.POST.get('ubicacion', ''),
+            detectar_vandalismo='detectar_vandalismo' in request.POST,
+            contar_visitantes='contar_visitantes' in request.POST,
+        )
+        messages.success(request, 'Camara creada correctamente.')
+        return redirect('monitor:patrimonio_vivo')
+    return render(request, 'monitor/camara_create.html', {'edificio': edificio})
+
+
+# --- 5. HERITAGE NFT MARKETPLACE ---
+@login_required
+def nft_marketplace_view(request):
+    nfts = HeritageNFT.objects.filter(activo=True).select_related('edificio', 'propietario')
+    filtros = {}
+    tipo = request.GET.get('tipo', '')
+    if tipo == 'subasta':
+        nfts = nfts.filter(es_subasta=True, estado='en_subasta')
+    elif tipo == 'venta':
+        nfts = nfts.filter(es_subasta=False, estado='disponible')
+    total_nfts = nfts.count()
+    total_volumen = HeritageNFT.objects.filter(estado='vendido').aggregate(t=Sum('precio_actual'))['t'] or 0
+    return render(request, 'monitor/nft_marketplace.html', {
+        'nfts': nfts,
+        'total_nfts': total_nfts,
+        'total_volumen': total_volumen,
+        'filtro_activo': tipo,
+    })
+
+
+@login_required
+def nft_create_view(request, edificio_pk):
+    edificio = get_object_or_404(Edificio, pk=edificio_pk)
+    if request.method == 'POST':
+        imagen = request.FILES.get('imagen')
+        precio = float(request.POST.get('precio', 100))
+        nft = HeritageNFT.objects.create(
+            edificio=edificio,
+            titulo=request.POST.get('titulo', f'NFT - {edificio.nombre}'),
+            descripcion=request.POST.get('descripcion', ''),
+            imagen=imagen if imagen else None,
+            precio_inicial=precio,
+            precio_actual=precio,
+            propietario=request.user,
+            creado_por=request.user,
+            es_subasta='es_subasta' in request.POST,
+            estado='en_subasta' if 'es_subasta' in request.POST else 'disponible',
+            token_id=f'HER-{uuid.uuid4().hex[:8].upper()}',
+            hash_contrato=f'0x{uuid.uuid4().hex}',
+        )
+        AuditLog.registrar(request.user, 'crear', 'HeritageNFT', nft.pk, f'NFT creado: {nft.titulo}')
+        messages.success(request, f'NFT "{nft.titulo}" creado correctamente.')
+        return redirect('monitor:nft_detalle', pk=nft.pk)
+    return render(request, 'monitor/nft_create.html', {'edificio': edificio})
+
+
+@login_required
+def nft_detalle_view(request, pk):
+    nft = get_object_or_404(HeritageNFT, pk=pk)
+    pujas = nft.historial_pujas.all().select_related('postor')[:20]
+    nft.visitas += 1
+    nft.save(update_fields=['visitas'])
+    if request.method == 'POST':
+        accion = request.POST.get('accion', '')
+        if accion == 'pujar' and nft.es_subasta:
+            monto = float(request.POST.get('monto', 0))
+            if monto > float(nft.precio_actual):
+                PujaNFT.objects.create(nft=nft, postor=request.user, monto=monto)
+                nft.precio_actual = monto
+                nft.pujas += 1
+                nft.save(update_fields=['precio_actual', 'pujas'])
+                messages.success(request, f'Puja de {monto} EUR registrada.')
+            else:
+                messages.warning(request, 'La puja debe ser mayor al precio actual.')
+        elif accion == 'comprar' and nft.estado == 'disponible':
+            nft.estado = 'vendido'
+            nft.propietario = request.user
+            nft.fecha_venta = timezone.now()
+            nft.save(update_fields=['estado', 'propietario', 'fecha_venta'])
+            messages.success(request, f'NFT "{nft.titulo}" comprado.')
+        return redirect('monitor:nft_detalle', pk=nft.pk)
+    return render(request, 'monitor/nft_detalle.html', {'nft': nft, 'pujas': pujas})
+
+
+# --- 6. SMART CONTRACTS DE RESTAURACION ---
+@login_required
+def smart_contract_view(request, edificio_pk):
+    edificio = get_object_or_404(Edificio, pk=edificio_pk)
+    contratos = SmartContract.objects.filter(edificio=edificio)[:10]
+    if request.method == 'POST':
+        titulo = request.POST.get('titulo', '')
+        monto = float(request.POST.get('monto_total', 0))
+        contratista_id = request.POST.get('contratista')
+        contratista = get_object_or_404(User, pk=contratista_id) if contratista_id else request.user
+        contrato = SmartContract.objects.create(
+            edificio=edificio, titulo=titulo,
+            descripcion=request.POST.get('descripcion', ''),
+            monto_total=monto, contratista=contratista,
+            creador=request.user, estado='activo',
+            hash_blockchain=f'0x{uuid.uuid4().hex}',
+        )
+        hitos_json = json.loads(request.POST.get('hitos', '[]'))
+        for i, h in enumerate(hitos_json):
+            HitoContrato.objects.create(
+                contrato=contrato, titulo=h.get('titulo', f'Hito {i+1}'),
+                descripcion=h.get('descripcion', ''),
+                monto_liberar=float(h.get('monto', 0)),
+                porcentaje=float(h.get('porcentaje', 0)),
+                orden=i+1,
+            )
+        AuditLog.registrar(request.user, 'crear', 'SmartContract', contrato.pk, f'Contrato: {titulo}')
+        messages.success(request, 'Smart Contract creado.')
+        return redirect('monitor:smart_contract', edificio_pk=edificio.pk)
+    return render(request, 'monitor/smart_contract.html', {
+        'edificio': edificio, 'contratos': contratos,
+    })
+
+
+@login_required
+def hito_completar_view(request, pk):
+    hito = get_object_or_404(HitoContrato, pk=pk)
+    hito.completado = True
+    hito.fecha_completado = timezone.now()
+    hito.save(update_fields=['completado', 'fecha_completado'])
+    contrato = hito.contrato
+    if all(h.completado for h in contrato.hitos.all()):
+        contrato.estado = 'completado'
+        contrato.fecha_completado = timezone.now()
+        contrato.save(update_fields=['estado', 'fecha_completado'])
+    messages.success(request, f'Hito "{hito.titulo}" completado. Pago de {hito.monto_liberar} EUR liberado.')
+    return redirect('monitor:smart_contract', edificio_pk=contrato.edificio.pk)
+
+
+# --- 7. HERITAGE CARBON CREDITS ---
+@login_required
+def carbon_credits_view(request):
+    credits = CarbonCredit.objects.all().select_related('edificio')
+    total_creditos = credits.aggregate(t=Sum('creditos_generados'))['t'] or 0
+    creditos_validados = credits.filter(validado=True).aggregate(t=Sum('creditos_generados'))['t'] or 0
+    if request.method == 'POST':
+        edificio_id = request.POST.get('edificio')
+        edificio = get_object_or_404(Edificio, pk=edificio_id)
+        CarbonCredit.objects.create(
+            edificio=edificio,
+            creditos_generados=float(request.POST.get('creditos', 0)),
+            certificado=f'CC-{uuid.uuid4().hex[:8].upper()}',
+            metodo_calculo=request.POST.get('metodo', 'restauracion'),
+            descripcion=request.POST.get('descripcion', ''),
+        )
+        messages.success(request, 'Carbon Credit registrado.')
+        return redirect('monitor:carbon_credits')
+    edificios = Edificio.objects.filter(activo=True)
+    return render(request, 'monitor/carbon_credits.html', {
+        'credits': credits, 'edificios': edificios,
+        'total_creditos': total_creditos, 'creditos_validados': creditos_validados,
+    })
+
+
+# --- 8. DNA DEL EDIFICIO ---
+@login_required
+def dna_edificio_view(request, pk):
+    edificio = get_object_or_404(Edificio, pk=pk)
+    dna, _ = DNAEdificio.objects.get_or_create(edificio=edificio)
+    if request.method == 'POST':
+        dna.score_estructural = float(request.POST.get('estructural', dna.score_estructural))
+        dna.score_ambiental = float(request.POST.get('ambiental', dna.score_ambiental))
+        dna.score_historico = float(request.POST.get('historico', dna.score_historico))
+        dna.score_accesibilidad = float(request.POST.get('accesibilidad', dna.score_accesibilidad))
+        dna.score_tecnologico = float(request.POST.get('tecnologico', dna.score_tecnologico))
+        dna.score_energetico = float(request.POST.get('energetico', dna.score_energetico))
+        dna.version += 1
+        dna.save()
+        messages.success(request, f'DNA actualizado a v{dna.version}.')
+        return redirect('monitor:dna_edificio', pk=edificio.pk)
+    return render(request, 'monitor/dna_edificio.html', {
+        'edificio': edificio, 'dna': dna,
+    })
+
+
+# --- 9. AI HERITAGE GUARDIAN ---
+@login_required
+def ai_guardian_view(request):
+    reglas = GuardianRule.objects.filter(activa=True)
+    alertas = GuardianAlert.objects.filter(resuelta=False).select_related('edificio', 'regla')[:50]
+    stats = {
+        'total_reglas': reglas.count(),
+        'alertas_criticas': alertas.filter(severidad='critical').count(),
+        'alertas_warning': alertas.filter(severidad='warning').count(),
+        'edificios_monitorizados': reglas.values('edificios').distinct().count(),
+    }
+    if request.method == 'POST':
+        accion = request.POST.get('accion', '')
+        if accion == 'crear_regla':
+            regla = GuardianRule.objects.create(
+                nombre=request.POST.get('nombre', ''),
+                descripcion=request.POST.get('descripcion', ''),
+                tipo_sensor=request.POST.get('tipo_sensor', 'temperatura'),
+                condicion=json.loads(request.POST.get('condicion', '{}')),
+                severidad=request.POST.get('severidad', 'warning'),
+            )
+            edificio_ids = request.POST.getlist('edificios')
+            if edificio_ids:
+                regla.edificios.set(Edificio.objects.filter(pk__in=edificio_ids))
+            messages.success(request, 'Regla Guardian creada.')
+        elif accion == 'resolver_alerta':
+            alerta_id = request.POST.get('alerta_id')
+            alerta = get_object_or_404(GuardianAlert, pk=alerta_id)
+            alerta.resuelta = True
+            alerta.fecha_resolucion = timezone.now()
+            alerta.save(update_fields=['resuelta', 'fecha_resolucion'])
+            messages.success(request, 'Alerta resuelta.')
+        return redirect('monitor:ai_guardian')
+    edificios = Edificio.objects.filter(activo=True)
+    return render(request, 'monitor/ai_guardian.html', {
+        'reglas': reglas, 'alertas': alertas, 'stats': stats, 'edificios': edificios,
+    })
+
+
+# --- 10. TOUR VR/AR IMMERSIVE ---
+@login_required
+def tour_vr_view(request, pk):
+    edificio = get_object_or_404(Edificio, pk=pk)
+    tours = TourVR.objects.filter(edificio=edificio)
+    tour_activo = tours.filter(activo=True).first()
+    if request.method == 'POST':
+        tour = TourVR.objects.create(
+            edificio=edificio,
+            titulo=request.POST.get('titulo', f'Tour {edificio.nombre}'),
+            descripcion=request.POST.get('descripcion', ''),
+            video_360_url=request.POST.get('video_360_url', ''),
+            modelo_glb_url=request.POST.get('modelo_glb_url', ''),
+            es_vr='es_vr' in request.POST,
+            es_ar='es_ar' in request.POST,
+        )
+        messages.success(request, 'Tour VR/AR creado.')
+        return redirect('monitor:tour_vr', pk=edificio.pk)
+    return render(request, 'monitor/tour_vr.html', {
+        'edificio': edificio, 'tours': tours, 'tour_activo': tour_activo,
+    })
+
+
+@login_required
+def tour_vr_visita_view(request, pk):
+    tour = get_object_or_404(TourVR, pk=pk)
+    tour.vistas += 1
+    tour.save(update_fields=['vistas'])
+    return render(request, 'monitor/tour_vr_visita.html', {'tour': tour})
+
+
+# --- 11. GAMIFICACION AVANZADA (Desafios) ---
+@login_required
+def desafios_view(request):
+    now = timezone.now()
+    desafios_activos = Desafio.objects.filter(activo=True, fecha_inicio__lte=now, fecha_fin__gte=now)
+    mis_desafios = DesafioUsuario.objects.filter(usuario=request.user).select_related('desafio')
+    ranking = DesafioUsuario.objects.values('usuario__username').annotate(
+        total_puntos=Sum('puntos_ganados')
+    ).order_by('-total_puntos')[:20]
+    if request.method == 'POST':
+        desafio_id = request.POST.get('desafio_id')
+        desafio = get_object_or_404(Desafio, pk=desafio_id)
+        participacion, created = DesafioUsuario.objects.get_or_create(
+            desafio=desafio, usuario=request.user,
+            defaults={'progreso': 0, 'puntos_ganados': 0}
+        )
+        if created:
+            messages.success(request, f'Te has unido al desafio "{desafio.titulo}".')
+        return redirect('monitor:desafios')
+    return render(request, 'monitor/desafios.html', {
+        'desafios_activos': desafios_activos,
+        'mis_desafios': mis_desafios,
+        'ranking': ranking,
+    })
+
+
+@login_required
+def desafio_progreso_view(request, pk):
+    desafio_usuario = get_object_or_404(DesafioUsuario, pk=pk, usuario=request.user)
+    progreso = float(request.POST.get('progreso', desafio_usuario.progreso))
+    desafio_usuario.progreso = min(100, progreso)
+    if desafio_usuario.progreso >= 100 and not desafio_usuario.completado:
+        desafio_usuario.completado = True
+        desafio_usuario.fecha_completado = timezone.now()
+        desafio_usuario.puntos_ganados = desafio_usuario.desafio.puntos_recompensa
+        PuntoGamificacion.objects.create(
+            usuario=request.user, accion='resolver_alerta',
+            puntos=desafio_usuario.puntos_ganados,
+            descripcion=f'Desafio completado: {desafio_usuario.desafio.titulo}'
+        )
+        messages.success(request, f'Desafio completado! +{desafio_usuario.puntos_ganados} puntos')
+    desafio_usuario.save()
+    return redirect('monitor:desafios')
+
+
+@login_required
+def desafio_crear_view(request):
+    if request.method == 'POST':
+        Desafio.objects.create(
+            titulo=request.POST.get('titulo', ''),
+            descripcion=request.POST.get('descripcion', ''),
+            tipo=request.POST.get('tipo', 'diario'),
+            accion_requerida=request.POST.get('accion_requerida', 'resolver_alerta'),
+            objetivo=int(request.POST.get('objetivo', 1)),
+            puntos_recompensa=int(request.POST.get('puntos', 10)),
+            fecha_inicio=timezone.now(),
+            fecha_fin=timezone.now() + timedelta(days=7),
+        )
+        messages.success(request, 'Desafio creado.')
+        return redirect('monitor:desafios')
+    return render(request, 'monitor/desafio_crear.html')

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from django.conf import settings
+from django.core.cache import cache
 import requests
 import json
 
@@ -27,12 +28,16 @@ DIAS_SEMANA_ES = {
 
 
 def get_hijri_date():
+    cache_key = f'hijri_{datetime.now().strftime("%Y-%m-%d")}'
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
     try:
         from hijridate import Gregorian
         today = datetime.now()
         g = Gregorian(today.year, today.month, today.day)
         h = g.to_hijri()
-        return {
+        result = {
             'dia': h.day,
             'mes': h.month_name(),
             'mes_es': MESES_HIJRI_ES.get(h.month, ''),
@@ -41,13 +46,20 @@ def get_hijri_date():
             'completa_en': f'{h.day} {h.month_name()} {h.year} AH',
         }
     except Exception:
-        return {
+        result = {
             'dia': '', 'mes': '', 'mes_es': '', 'anio': '',
             'completa': '', 'completa_en': ''
         }
+    cache.set(cache_key, result, 86400)
+    return result
 
 
 def get_prayer_times(lat=40.4168, lng=-3.7038, city='Madrid'):
+    cache_key = f'prayer_{city}_{datetime.now().strftime("%Y-%m-%d")}'
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+
     try:
         url = f'https://api.aladhan.com/v1/timings/{datetime.now().strftime("%d-%m-%Y")}'
         params = {
@@ -56,7 +68,7 @@ def get_prayer_times(lat=40.4168, lng=-3.7038, city='Madrid'):
             'method': 1,
             'shafpiaq': 1,
         }
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url, params=params, timeout=5)
         data = response.json()
         if data.get('code') == 200:
             timings = data['data']['timings']
@@ -94,30 +106,39 @@ def get_prayer_times(lat=40.4168, lng=-3.7038, city='Madrid'):
                 result['next_prayer'] = 'Fajr'
                 result['next_prayer_name'] = 'Fajr'
                 result['next_prayer_time'] = result['fajr']
+            cache.set(cache_key, result, 3600)
             return result
     except Exception:
         pass
-    return {
+    result = {
         'fajr': '--:--', 'sunrise': '--:--', 'dhuhr': '--:--',
         'asr': '--:--', 'maghrib': '--:--', 'isha': '--:--',
         'imsak': '--:--', 'midnight': '--:--', 'hijri': {}, 'method': '',
         'next_prayer': '', 'next_prayer_name': '', 'next_prayer_time': ''
     }
+    cache.set(cache_key, result, 300)
+    return result
 
 
 def get_weather(city='Madrid', lat=None, lng=None):
     api_key = getattr(settings, 'OPENWEATHERMAP_API_KEY', '')
     if not api_key:
         return None
+
+    cache_key = f'weather_{city}_{datetime.now().strftime("%Y-%m-%d_%H")}'
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+
     try:
         if lat and lng:
             url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lng}&appid={api_key}&units=metric&lang=es'
         else:
             url = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric&lang=es'
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=5)
         data = response.json()
         if data.get('cod') == 200:
-            return {
+            result = {
                 'temperatura': round(data['main']['temp']),
                 'sensacion': round(data['main']['feels_like']),
                 'humedad': data['main']['humidity'],
@@ -127,6 +148,8 @@ def get_weather(city='Madrid', lat=None, lng=None):
                 'ciudad': data.get('name', city),
                 'pais': data['sys'].get('country', ''),
             }
+            cache.set(cache_key, result, 1800)
+            return result
     except Exception:
         pass
     return None

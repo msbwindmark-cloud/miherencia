@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}Time Machine Patrimonial - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .time-slider-container { background: var(--gradient-hero); border-radius: var(--radius); padding: 30px; color: white; }
+    .epoca-label { font-size: 3rem; font-weight: 800; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .compare-container { position: relative; border-radius: var(--radius); overflow: hidden; height: 400px; }
+    .compare-img { width: 100%; height: 100%; object-fit: cover; }
+    .compare-overlay { position: absolute; top: 0; left: 0; width: 50%; height: 100%; overflow: hidden; border-right: 3px solid var(--accent); }
+    .compare-overlay img { width: 200%; max-width: none; height: 100%; object-fit: cover; }
+    .compare-slider { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: var(--accent); cursor: ew-resize; z-index: 10; }
+    .historial-item { transition: all 0.3s; cursor: pointer; }
+    .historial-item:hover { transform: scale(1.02); box-shadow: var(--shadow-glow); }
+    .era-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    @keyframes timeWarp { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+    .processing { animation: timeWarp 2s infinite; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-clock-history" style="color:var(--accent);"></i> Time Machine Patrimonial</h2>
+        <p class="text-muted mb-0">Reconstruye visualmente como era {{ edificio.nombre }} en epocas pasadas</p>
+    </div>
+    <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="glass-card p-4 mb-4">
+            <h5 class="mb-3"><i class="bi bi-sliders"></i> Selecciona la Epoca</h5>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="time-slider-container mb-4">
+                    <div class="text-center mb-3">
+                        <span class="epoca-label" id="epoca-display">1800</span>
+                        <p class="mb-0 opacity-75">Ano de destino</p>
+                    </div>
+                    <input type="range" class="form-range" min="500" max="2025" value="1800" name="epoca_destino"
+                           id="epoca-slider" style="height:8px;" oninput="document.getElementById('epoca-display').textContent=this.value">
+                    <div class="d-flex justify-content-between mt-2" style="font-size:0.8rem; opacity:0.7;">
+                        <span>500 d.C.</span><span>1200</span><span>1500</span><span>1800</span><span>2025</span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Estilo Arquitectonico</label>
+                        <select name="estilo_reconstruccion" class="form-select">
+                            <option value="romano">Epoca Romana</option>
+                            <option value="medieval" selected>Medieval</option>
+                            <option value="renacimiento">Renacimiento</option>
+                            <option value="barroco">Barroco</option>
+                            <option value="neoclasico">Neoclasico</option>
+                            <option value="modernista">Modernista</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Foto Actual del Edificio</label>
+                        <input type="file" name="imagen" class="form-control" accept="image/*" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-lg w-100" style="background:var(--gradient-accent); color:white; font-weight:600;">
+                    <i class="bi bi-magic"></i> Generar Reconstruccion Historica
+                </button>
+            </form>
+        </div>
+
+        {% if historial %}
+        <div class="glass-card p-4">
+            <h5 class="mb-3"><i class="bi bi-clock-history"></i> Historial de Solicitudes</h5>
+            <div class="row g-3">
+                {% for h in historial %}
+                <div class="col-md-6 historial-item">
+                    <div class="card h-100" style="border:1px solid rgba(233,69,96,0.2);">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="era-badge" style="background:rgba(233,69,96,0.15); color:var(--accent);">{{ h.epoca_destino }}</span>
+                                <span class="badge {% if h.estado == 'completado' %}bg-success{% elif h.estado == 'procesando' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                    {{ h.get_estado_display }}
+                                </span>
+                            </div>
+                            <p class="mb-1"><strong>{{ h.get_estilo_reconstruccion_display }}</strong></p>
+                            <small class="text-muted">{{ h.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                            {% if h.confianza > 0 %}
+                            <div class="mt-2">
+                                <small>Confianza: <strong>{{ h.confianza }}%</strong></small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass-card p-4 mb-4">
+            <h5><i class="bi bi-info-circle"></i> Como Funciona</h5>
+            <div class="mt-3">
+                <div class="d-flex mb-3">
+                    <div class="me-3"><i class="bi bi-camera fs-4" style="color:var(--accent);"></i></div>
+                    <div><strong>Paso 1:</strong> Sube una foto actual del edificio</div>
+                </div>
+                <div class="d-flex mb-3">
+                    <div class="me-3"><i class="bi bi-calendar-event fs-4" style="color:var(--gold);"></i></div>
+                    <div><strong>Paso 2:</strong> Selecciona la epoca de destino</div>
+                </div>
+                <div class="d-flex mb-3">
+                    <div class="me-3"><i class="bi bi-magic fs-4" style="color:var(--success);"></i></div>
+                    <div><strong>Paso 3:</strong> La IA reconstruye visualmente la epoca</div>
+                </div>
+                <div class="d-flex">
+                    <div class="me-3"><i class="bi bi-arrow-left-right fs-4" style="color:#9b59b6;"></i></div>
+                    <div><strong>Paso 4:</strong> Compara antes/despues con slider</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card p-4">
+            <h5><i class="bi bi-calendar3"></i> Epocas Populares</h5>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <button class="btn btn-outline-light btn-sm" onclick="setEpoca(800)">800 d.C.</button>
+                <button class="btn btn-outline-light btn-sm" onclick="setEpoca(1200)">1200</button>
+                <button class="btn btn-outline-light btn-sm" onclick="setEpoca(1492)">1492</button>
+                <button class="btn btn-outline-light btn-sm" onclick="setEpoca(1800)">1800</button>
+                <button class="btn btn-outline-light btn-sm" onclick="setEpoca(1900)">1900</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function setEpoca(val) {
+    document.getElementById('epoca-slider').value = val;
+    document.getElementById('epoca-display').textContent = val;
+}
+</script>
+{% endblock %}

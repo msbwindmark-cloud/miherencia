@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Tour VR - {{ tour.titulo }} - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .vr-fullscreen { width: 100%; height: calc(100vh - 100px); background: #000; border-radius: var(--radius); position: relative; overflow: hidden; }
+    .vr-panorama { width: 100%; height: 100%; object-fit: cover; cursor: grab; }
+    .vr-panorama:active { cursor: grabbing; }
+    .hotspot-info { position: absolute; background: rgba(26,26,46,0.95); backdrop-filter: blur(10px); border-radius: var(--radius-sm); padding: 15px; color: white; max-width: 250px; z-index: 20; }
+    .vr-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 10; }
+    .compass { position: absolute; top: 20px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.5); border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="vr-fullscreen">
+    {% if tour.imagen_panoramica %}
+    <img src="{{ tour.imagen_panoramica.url }}" class="vr-panorama" id="panorama" alt="Tour 360">
+    {% else %}
+    <div style="width:100%;height:100%;background:var(--gradient-hero);display:flex;align-items:center;justify-content:center;">
+        <div class="text-center text-white">
+            <i class="bi bi-badge-vr" style="font-size:5rem;"></i>
+            <h2 class="mt-3">{{ tour.titulo }}</h2>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="compass"><i class="bi bi-compass fs-4"></i></div>
+
+    <div class="vr-controls">
+        <button class="btn btn-light" onclick="moveView(-1)"><i class="bi bi-arrow-left"></i></button>
+        <button class="btn btn-light" onclick="moveView(1)"><i class="bi bi-arrow-right"></i></button>
+        <button class="btn btn-light" onclick="zoomIn()"><i class="bi bi-zoom-in"></i></button>
+        <button class="btn btn-light" onclick="zoomOut()"><i class="bi bi-zoom-out"></i></button>
+        <button class="btn btn-warning" onclick="enterVR()"><i class="bi bi-badge-vr"></i> VR Mode</button>
+        <a href="{% url 'monitor:tour_vr' pk=tour.edificio.pk %}" class="btn btn-light"><i class="bi bi-x-lg"></i></a>
+    </div>
+</div>
+
+<script>
+let x = 0, scale = 1;
+const panorama = document.getElementById('panorama');
+function moveView(dir) { x += dir * 50; if(panorama) panorama.style.transform = `translateX(${x}px) scale(${scale})`; }
+function zoomIn() { scale = Math.min(2, scale + 0.2); if(panorama) panorama.style.transform = `translateX(${x}px) scale(${scale})`; }
+function zoomOut() { scale = Math.max(0.5, scale - 0.2); if(panorama) panorama.style.transform = `translateX(${x}px) scale(${scale})`; }
+function enterVR() {
+    if(navigator.xr) { navigator.xr.requestSession('immersive-vr').then(s => console.log('VR started')); }
+    else { alert('WebXR no soportado en este navegador. Usa Chrome o Edge.'); }
+}
+document.addEventListener('keydown', e => {
+    if(e.key === 'ArrowLeft') moveView(-1);
+    if(e.key === 'ArrowRight') moveView(1);
+    if(e.key === '+') zoomIn();
+    if(e.key === '-') zoomOut();
+});
+</script>
+{% endblock %}

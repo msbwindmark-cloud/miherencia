@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% block title %}Cotización: {{ cotizacion.titulo }} - SmartHeritage{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold"><i class="bi bi-file-earmark-text me-2" style="color:var(--accent)"></i>{{ cotizacion.titulo }}</h2>
+            <p class="text-muted mb-0">Cotización para {{ cotizacion.cliente_nombre }}</p>
+        </div>
+        <div>
+            <a href="{% url 'monitor:cotizacion_list' %}" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left me-1"></i>Volver
+            </a>
+            {% if cotizacion.estado == 'borrador' %}
+            <a href="{% url 'monitor:cotizacion_edit' cotizacion.pk %}" class="btn btn-outline-primary me-2">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+            {% endif %}
+            <a href="{% url 'monitor:cotizacion_pdf' cotizacion.pk %}" class="btn btn-outline-danger me-2">
+                <i class="bi bi-file-pdf me-1"></i>PDF
+            </a>
+            {% if cotizacion.estado == 'borrador' %}
+            <form method="post" action="{% url 'monitor:cotizacion_enviar' cotizacion.pk %}" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-accent" onclick="return confirm('¿Enviar cotización a {{ cotizacion.cliente_email }}?')">
+                    <i class="bi bi-send me-1"></i>Enviar al Cliente
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card-custom p-4 mb-4">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Estado</small>
+                        {% if cotizacion.estado == 'borrador' %}
+                            <span class="badge bg-secondary fs-6">Borrador</span>
+                        {% elif cotizacion.estado == 'enviada' %}
+                            <span class="badge fs-6" style="background:var(--accent2)">Enviada</span>
+                        {% elif cotizacion.estado == 'aceptada' %}
+                            <span class="badge fs-6" style="background:var(--success)">Aceptada</span>
+                        {% elif cotizacion.estado == 'rechazada' %}
+                            <span class="badge fs-6" style="background:var(--danger)">Rechazada</span>
+                        {% elif cotizacion.estado == 'expirada' %}
+                            <span class="badge bg-warning text-dark fs-6">Expirada</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Fecha creación</small>
+                        <strong>{{ cotizacion.fecha_creacion|date:'d/m/Y H:i' }}</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Creado por</small>
+                        <strong>{{ cotizacion.creado_por|default:'Sistema' }}</strong>
+                    </div>
+                    {% if cotizacion.edificio %}
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Edificio</small>
+                        <strong>{{ cotizacion.edificio.nombre }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if cotizacion.descripcion %}
+                <div class="p-3 rounded" style="background:rgba(233,69,96,0.05);border-left:3px solid var(--accent);">
+                    {{ cotizacion.descripcion|linebreaksbr }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="card-custom p-4 mb-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-list-check me-2"></i>Conceptos</h5>
+                <div class="table-responsive">
+                    <table class="table table-custom mb-0">
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-end">Precio Unit.</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.concepto }}</strong>
+                                    {% if item.descripcion %}<br><small class="text-muted">{{ item.descripcion }}</small>{% endif %}
+                                </td>
+                                <td class="text-center">{{ item.cantidad }}</td>
+                                <td class="text-end">€{{ item.precio_unitario|floatformat:2 }}</td>
+                                <td class="text-end fw-bold">€{{ item.subtotal|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background:rgba(212,168,83,0.08);">
+                                <td colspan="3" class="text-end fw-bold fs-5">TOTAL:</td>
+                                <td class="text-end fw-bold fs-5" style="color:var(--gold)">€{{ cotizacion.total|floatformat:2 }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            {% if historial %}
+            <div class="card-custom p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Historial</h5>
+                {% for h in historial %}
+                <div class="d-flex align-items-start mb-3 {% if not forlast %}border-bottom pb-3{% endif %}">
+                    <div class="me-3">
+                        {% if h.accion == 'creada' %}
+                            <span class="badge bg-secondary"><i class="bi bi-plus-circle"></i></span>
+                        {% elif h.accion == 'enviada' %}
+                            <span class="badge" style="background:var(--accent2)"><i class="bi bi-send"></i></span>
+                        {% elif h.accion == 'aceptada' %}
+                            <span class="badge" style="background:var(--success)"><i class="bi bi-check-circle"></i></span>
+                        {% elif h.accion == 'rechazada' %}
+                            <span class="badge" style="background:var(--danger)"><i class="bi bi-x-circle"></i></span>
+                        {% else %}
+                            <span class="badge bg-warning"><i class="bi bi-pencil"></i></span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <strong>{{ h.get_accion_display }}</strong>
+                        {% if h.actor %}<span class="text-muted"> por {{ h.actor.username }}</span>{% endif %}
+                        <br><small class="text-muted">{{ h.fecha|date:'d/m/Y H:i' }}</small>
+                        {% if h.comentario %}<br><small>{{ h.comentario }}</small>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card-custom p-4 mb-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-person me-2"></i>Cliente</h5>
+                <p class="mb-1"><strong>{{ cotizacion.cliente_nombre }}</strong></p>
+                <p class="mb-1"><i class="bi bi-envelope me-2 text-muted"></i>{{ cotizacion.cliente_email }}</p>
+                {% if cotizacion.cliente_telefono %}
+                <p class="mb-0"><i class="bi bi-phone me-2 text-muted"></i>{{ cotizacion.cliente_telefono }}</p>
+                {% endif %}
+            </div>
+
+            {% if cotizacion.estado == 'enviada' %}
+            <div class="card-custom p-4 mb-4">
+                <h5 class="fw-bold mb-2"><i class="bi bi-link-45deg me-2"></i>Enlace Público</h5>
+                <p class="text-muted small">Comparte este enlace con el cliente para que pueda aceptar o rechazar:</p>
+                <div class="input-group">
+                    <input type="text" class="form-control form-control-sm" id="publicLink" readonly
+                           value="{{ SITE_URL|default:'http://localhost:8000' }}/cotizacion/publica/{{ cotizacion.token_publico }}/">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="copyLink()">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                </div>
+                {% if cotizacion.fecha_expiracion %}
+                <small class="text-muted d-block mt-2">
+                    <i class="bi bi-clock me-1"></i>
+                    Expira: {{ cotizacion.fecha_expiracion|date:'d/m/Y H:i' }}
+                    ({{ cotizacion.dias_restantes }} días restantes)
+                </small>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if cotizacion.motivo_rechazo %}
+            <div class="card-custom p-4 mb-4" style="border-left:3px solid var(--danger);">
+                <h5 class="fw-bold mb-2" style="color:var(--danger)"><i class="bi bi-x-circle me-2"></i>Motivo de Rechazo</h5>
+                <p class="mb-0">{{ cotizacion.motivo_rechazo }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<script>
+function copyLink() {
+    navigator.clipboard.writeText(document.getElementById('publicLink').value);
+    Swal.fire({icon:'success',title:'Copiado',text:'Enlace copiado al portapapeles',timer:1500,showConfirmButton:false});
+}
+</script>
+{% endblock %}

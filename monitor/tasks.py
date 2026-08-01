@@ -30,10 +30,24 @@ def generar_reporte_semanal_task(self):
             ).count()
             mantenimientos = Mantenimiento.objects.filter(
                 edificio=edificio,
-                fecha_programada__gte=hace_una_semana
+                fecha_limite__gte=hace_una_semana.date()
             ).count()
-            print(f'[Reporte] {edificio.nombre}: {stats["total"]} lecturas, {alertas} alertas, {mantenimientos} mantenimientos')
-        return 'Reporte semanal generado exitosamente'
+
+            asunto = f'[SmartHeritage] Reporte Semanal - {edificio.nombre}'
+            mensaje = (
+                f'Reporte semanal de {edificio.nombre}\n\n'
+                f'Total lecturas: {stats["total"]}\n'
+                f'Temperatura media: {round(stats["promedio_temperatura"] or 0, 1)}\n'
+                f'Alertas: {alertas}\n'
+                f'Mantenimientos: {mantenimientos}\n'
+                f'Salud actual: {edificio.salud_score}%\n'
+            )
+            email_admins = [a[1] for a in settings.ADMINS] if hasattr(settings, 'ADMINS') and settings.ADMINS else []
+            if not email_admins and settings.EMAIL_HOST_USER:
+                email_admins = [settings.EMAIL_HOST_USER]
+            if email_admins:
+                send_mail(asunto, mensaje, settings.DEFAULT_FROM_EMAIL, email_admins, fail_silently=True)
+        return 'Reporte semanal generado y enviado'
     except Exception as exc:
         self.retry(exc=exc, countdown=60)
 
@@ -53,25 +67,28 @@ def verificar_alertas_task(self):
                         lectura=ultima,
                         resuelta=False,
                         defaults={
+                            'tipo_alerta': 'alto',
                             'mensaje': f'{sensor.nombre}: {ultima.valor} {sensor.unidad_medida} supera umbral maximo ({sensor.umbral_max})',
-                            'nivel': 'critica' if ultima.valor > sensor.umbral_max * 1.5 else 'alta',
+                            'valor_detectado': ultima.valor,
                         }
                     )
                     if created:
                         alertas_generadas += 1
+                        enviar_email_alerta_task.delay(str(alerta.id))
                 elif sensor.umbral_min is not None and ultima.valor < sensor.umbral_min:
                     alerta, created = Alerta.objects.get_or_create(
                         sensor=sensor,
                         lectura=ultima,
                         resuelta=False,
                         defaults={
+                            'tipo_alerta': 'bajo',
                             'mensaje': f'{sensor.nombre}: {ultima.valor} {sensor.unidad_medida} inferior a umbral minimo ({sensor.umbral_min})',
-                            'nivel': 'alta',
+                            'valor_detectado': ultima.valor,
                         }
                     )
                     if created:
                         alertas_generadas += 1
-        print(f'[Alertas] {alertas_generadas} nuevas alertas generadas')
+                        enviar_email_alerta_task.delay(str(alerta.id))
         return f'{alertas_generadas} alertas generadas'
     except Exception as exc:
         self.retry(exc=exc, countdown=30)
@@ -95,7 +112,17 @@ def backup_database_task(self):
             tamano_kb=round(size_kb, 2),
             descripcion=f'Backup automatico {timestamp}',
         )
-        print(f'[Backup] Creado: {backup_file} ({size_kb:.1f} KB)')
+        email_admins = [a[1] for a in settings.ADMINS] if hasattr(settings, 'ADMINS') and settings.ADMINS else []
+        if not email_admins and settings.EMAIL_HOST_USER:
+            email_admins = [settings.EMAIL_HOST_USER]
+        if email_admins:
+            send_mail(
+                '[SmartHeritage] Backup Completado',
+                f'Backup creado: {backup_file}\nTamano: {size_kb:.1f} KB',
+                settings.DEFAULT_FROM_EMAIL,
+                email_admins,
+                fail_silently=True,
+            )
         return f'Backup creado: {backup_file}'
     except Exception as exc:
         self.retry(exc=exc, countdown=120)
@@ -106,26 +133,26 @@ def enviar_email_alerta_task(self, alerta_id):
     from .models import Alerta
     try:
         alerta = Alerta.objects.select_related('sensor', 'sensor__edificio').get(id=alerta_id)
-        asunto = f'[SmartHeritage] Alerta: {alerta.sensor.nombre}'
-        mensaje = f"""
-        Alerta detectada en {alerta.sensor.edificio.nombre}
-        Sensor: {alerta.sensor.nombre}
-        Nivel: {alerta.nivel}
-        Mensaje: {alerta.mensaje}
-        Fecha: {alerta.fecha_creacion.strftime('%d/%m/%Y %H:%M')}
-        """
-        email_admins = [a[1] for a in settings.ADMINS] if hasattr(settings, 'ADMINS') else []
+        asunto = f'[SmartHeritage] Alerta {alerta.get_severidad_display()}: {alerta.sensor.nombre}'
+        mensaje = (
+            f'Alerta detectada en {alerta.sensor.edificio.nombre}\n\n'
+            f'Sensor: {alerta.sensor.nombre}\n'
+            f'Tipo: {alerta.sensor.get_tipo_display()}\n'
+            f'Severidad: {alerta.get_severidad_display()}\n'
+            f'Mensaje: {alerta.mensaje}\n'
+            f'Valor detectado: {alerta.valor_detectado} {alerta.sensor.unidad_medida}\n'
+            f'Fecha: {alerta.fecha_creacion.strftime("%d/%m/%Y %H:%M")}\n'
+        )
+        email_admins = [a[1] for a in settings.ADMINS] if hasattr(settings, 'ADMINS') and settings.ADMINS else []
         if not email_admins and settings.EMAIL_HOST_USER:
             email_admins = [settings.EMAIL_HOST_USER]
         if email_admins:
             send_mail(
-                asunto,
-                mensaje,
+                asunto, mensaje,
                 settings.DEFAULT_FROM_EMAIL,
                 email_admins,
                 fail_silently=True,
             )
-        print(f'[Email Alerta] Enviado: {asunto}')
         return f'Email enviado para alerta {alerta_id}'
     except Exception as exc:
         self.retry(exc=exc, countdown=60)
@@ -154,11 +181,10 @@ def mantenimiento_predictivo_task(self):
                         titulo=f'Mantenimiento preventivo: {sensor.nombre}',
                         descripcion=f'Sensor {sensor.nombre} muestra variacion inusual ({variacion_media:.2f} promedio). Se recomienda revision.',
                         estado='pendiente',
-                        fecha_programada=timezone.now().date() + timedelta(days=7),
+                        fecha_limite=(timezone.now() + timedelta(days=7)).date(),
                         prioridad='alta',
                     )
                     mantenimientos_creados += 1
-        print(f'[Predictivo] {mantenimientos_creados} mantenimientos preventivos creados')
         return f'{mantenimientos_creados} mantenimientos preventivos creados'
     except Exception as exc:
         self.retry(exc=exc, countdown=60)
@@ -171,7 +197,6 @@ def limpiar_datos_antiguos_task(self, dias=365):
         fecha_limite = timezone.now() - timedelta(days=dias)
         lecturas_eliminadas = Lectura.objects.filter(fecha_hora__lt=fecha_limite).delete()[0]
         logs_eliminados = AuditLog.objects.filter(fecha__lt=fecha_limite).delete()[0]
-        print(f'[Limpieza] {lecturas_eliminadas} lecturas y {logs_eliminados} logs eliminados')
         return f'{lecturas_eliminadas} lecturas y {logs_eliminados} logs eliminados'
     except Exception as exc:
         self.retry(exc=exc, countdown=300)
@@ -182,10 +207,8 @@ def exportar_datos_task(self, edificio_id=None, formato='csv'):
     from .models import Edificio, Lectura
     try:
         if edificio_id:
-            edificio = Edificio.objects.get(id=edificio_id)
-            lecturas = Lectura.objects.filter(sensor__edificio=edificio).select_related('sensor')
+            lecturas = Lectura.objects.filter(sensor__edificio_id=edificio_id).select_related('sensor')
         else:
-            edificio = None
             lecturas = Lectura.objects.all().select_related('sensor')
 
         output = io.StringIO()
@@ -200,7 +223,75 @@ def exportar_datos_task(self, edificio_id=None, formato='csv'):
                 l.sensor.unidad_medida,
                 'Si' if l.es_alerta else 'No',
             ])
-        print(f'[Exportar] {lecturas.count()} lecturas exportadas')
+        email_admins = [a[1] for a in settings.ADMINS] if hasattr(settings, 'ADMINS') and settings.ADMINS else []
+        if not email_admins and settings.EMAIL_HOST_USER:
+            email_admins = [settings.EMAIL_HOST_USER]
+        if email_admins:
+            send_mail(
+                '[SmartHeritage] Datos Exportados',
+                f'Se exportaron {lecturas.count()} lecturas en formato {formato.upper()}',
+                settings.DEFAULT_FROM_EMAIL,
+                email_admins,
+                fail_silently=True,
+            )
         return output.getvalue()[:500]
+    except Exception as exc:
+        self.retry(exc=exc, countdown=60)
+
+
+@shared_task(bind=True, max_retries=1)
+def simular_lecturas_task(self):
+    import random
+    from .models import Sensor, Lectura
+    try:
+        sensores = Sensor.objects.filter(activo=True)
+        lecturas_creadas = 0
+        for sensor in sensores:
+            if sensor.tipo == 'temperatura':
+                valor = round(random.uniform(15.0, 35.0), 1)
+            elif sensor.tipo == 'humedad':
+                valor = round(random.uniform(30.0, 85.0), 1)
+            elif sensor.tipo == 'vibracion':
+                valor = round(random.uniform(0.0, 8.0), 2)
+            elif sensor.tipo == 'luz':
+                valor = round(random.uniform(0.0, 1000.0), 0)
+            elif sensor.tipo == 'co2':
+                valor = round(random.uniform(300.0, 800.0), 0)
+            elif sensor.tipo == 'ruido':
+                valor = round(random.uniform(20.0, 90.0), 1)
+            elif sensor.tipo == 'grieta':
+                valor = round(random.uniform(0.0, 5.0), 3)
+            elif sensor.tipo == 'presion':
+                valor = round(random.uniform(1000.0, 1030.0), 1)
+            else:
+                valor = round(random.uniform(0.0, 100.0), 1)
+
+            Lectura.objects.create(sensor=sensor, valor=valor, fecha_hora=timezone.now())
+            lecturas_creadas += 1
+
+        return f'{lecturas_creadas} lecturas simuladas'
+    except Exception as exc:
+        self.retry(exc=exc, countdown=30)
+
+
+@shared_task(bind=True, max_retries=1)
+def verificar_cotizaciones_expiradas_task(self):
+    from .models import Cotizacion, CotizacionHistorial
+    try:
+        ahora = timezone.now()
+        expiradas = Cotizacion.objects.filter(
+            estado='enviada',
+            fecha_expiracion__lt=ahora
+        )
+        count = 0
+        for cot in expiradas:
+            cot.estado = 'expirada'
+            cot.save()
+            CotizacionHistorial.objects.create(
+                cotizacion=cot, accion='expirada',
+                comentario='Expirada automáticamente por el sistema'
+            )
+            count += 1
+        return f'{count} cotizaciones expiradas'
     except Exception as exc:
         self.retry(exc=exc, countdown=60)

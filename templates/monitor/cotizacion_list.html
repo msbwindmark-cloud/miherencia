@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}Cotizaciones - SmartHeritage{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold"><i class="bi bi-file-earmark-text me-2" style="color:var(--accent)"></i>Cotizaciones</h2>
+            <p class="text-muted mb-0">Gestiona presupuestos y propuestas para clientes</p>
+        </div>
+        <a href="{% url 'monitor:cotizacion_create' %}" class="btn btn-accent">
+            <i class="bi bi-plus-lg me-2"></i>Nueva Cotización
+        </a>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="stat-card p-3 text-center">
+                <h3 class="fw-bold mb-0">{{ stats.total }}</h3>
+                <small class="text-muted">Total</small>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card p-3 text-center">
+                <h3 class="fw-bold mb-0" style="color:var(--text-secondary)">{{ stats.borrador }}</h3>
+                <small class="text-muted">Borradores</small>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card p-3 text-center">
+                <h3 class="fw-bold mb-0" style="color:var(--accent2)">{{ stats.enviada }}</h3>
+                <small class="text-muted">Enviadas</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card p-3 text-center">
+                <h3 class="fw-bold mb-0" style="color:var(--success)">{{ stats.aceptada }}</h3>
+                <small class="text-muted">Aceptadas</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card p-3 text-center">
+                <h3 class="fw-bold mb-0" style="color:var(--gold)">€{{ stats.total_monto|floatformat:0 }}</h3>
+                <small class="text-muted">Total aceptado</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-custom p-3 mb-4">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <input type="text" name="q" class="form-control" placeholder="Buscar por cliente, título o email..." value="{{ buscar }}">
+            </div>
+            <div class="col-md-3">
+                <select name="estado" class="form-select">
+                    <option value="">Todos los estados</option>
+                    <option value="borrador" {% if estado_filter == 'borrador' %}selected{% endif %}>Borrador</option>
+                    <option value="enviada" {% if estado_filter == 'enviada' %}selected{% endif %}>Enviada</option>
+                    <option value="aceptada" {% if estado_filter == 'aceptada' %}selected{% endif %}>Aceptada</option>
+                    <option value="rechazada" {% if estado_filter == 'rechazada' %}selected{% endif %}>Rechazada</option>
+                    <option value="expirada" {% if estado_filter == 'expirada' %}selected{% endif %}>Expirada</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Filtrar</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card-custom">
+        <div class="table-responsive">
+            <table class="table table-custom mb-0">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Cliente</th>
+                        <th>Email</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cot in cotizaciones %}
+                    <tr>
+                        <td class="fw-semibold">{{ cot.titulo }}</td>
+                        <td>{{ cot.cliente_nombre }}</td>
+                        <td class="text-muted">{{ cot.cliente_email }}</td>
+                        <td class="fw-bold" style="color:var(--gold)">€{{ cot.total|floatformat:2 }}</td>
+                        <td>
+                            {% if cot.estado == 'borrador' %}
+                                <span class="badge bg-secondary">Borrador</span>
+                            {% elif cot.estado == 'enviada' %}
+                                <span class="badge" style="background:var(--accent2)">Enviada</span>
+                            {% elif cot.estado == 'aceptada' %}
+                                <span class="badge" style="background:var(--success)">Aceptada</span>
+                            {% elif cot.estado == 'rechazada' %}
+                                <span class="badge" style="background:var(--danger)">Rechazada</span>
+                            {% elif cot.estado == 'expirada' %}
+                                <span class="badge bg-warning">Expirada</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ cot.fecha_creacion|date:'d/m/Y' }}</td>
+                        <td>
+                            <a href="{% url 'monitor:cotizacion_detail' cot.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if cot.estado == 'borrador' %}
+                            <a href="{% url 'monitor:cotizacion_edit' cot.pk %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-file-earmark-x" style="font-size:2rem;"></i><br>
+                            No hay cotizaciones aún
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

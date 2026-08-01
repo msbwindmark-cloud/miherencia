@@ -17,7 +17,9 @@ from .models import (
     ChatAsistenteIA, DigitalTwin, FotoInspeccion, Cita, TareaKanban,
     NotificacionWhatsApp, ContratoDigital, ItemInventario, BitacoraObra,
     RolSistema, PermisosUsuario, Comentario, Recordatorio, CalculadoraRestauracion,
-    ExportacionLog, WebhookConfig, DashboardWidget, TextoMultiidioma, NotificacionPush
+    ExportacionLog, WebhookConfig, DashboardWidget, TextoMultiidioma, NotificacionPush,
+    EmailVerificationToken, MFAConfig, LoginAttempt,
+    Cotizacion, CotizacionItem, CotizacionHistorial
 )
 
 
@@ -709,3 +711,43 @@ class TextoMultiidiomaAdmin(admin.ModelAdmin):
 class NotificacionPushAdmin(admin.ModelAdmin):
     list_display = ('titulo', 'usuario', 'leida', 'fecha')
     list_filter = ('leida',)
+
+
+@admin.register(EmailVerificationToken)
+class EmailVerificationTokenAdmin(admin.ModelAdmin):
+    list_display = ('user', 'token', 'creado', 'expirado')
+    list_filter = ('expirado',)
+    search_fields = ('user__username', 'user__email')
+
+
+@admin.register(MFAConfig)
+class MFAConfigAdmin(admin.ModelAdmin):
+    list_display = ('user', 'is_enabled', 'qr_generated', 'creado')
+    list_filter = ('is_enabled',)
+
+
+@admin.register(LoginAttempt)
+class LoginAttemptAdmin(admin.ModelAdmin):
+    list_display = ('username', 'ip_address', 'exitoso', 'fecha')
+    list_filter = ('exitoso',)
+    search_fields = ('username', 'ip_address')
+
+
+@admin.register(Cotizacion)
+class CotizacionAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'cliente_nombre', 'cliente_email', 'total', 'estado', 'fecha_creacion', 'creado_por')
+    list_filter = ('estado',)
+    search_fields = ('titulo', 'cliente_nombre', 'cliente_email')
+    readonly_fields = ('token_publico', 'fecha_creacion', 'fecha_envio', 'fecha_respuesta')
+
+
+@admin.register(CotizacionItem)
+class CotizacionItemAdmin(admin.ModelAdmin):
+    list_display = ('cotizacion', 'concepto', 'cantidad', 'precio_unitario', 'subtotal')
+    search_fields = ('concepto',)
+
+
+@admin.register(CotizacionHistorial)
+class CotizacionHistorialAdmin(admin.ModelAdmin):
+    list_display = ('cotizacion', 'accion', 'actor', 'fecha')
+    list_filter = ('accion',)

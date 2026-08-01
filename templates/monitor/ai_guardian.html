@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}AI Heritage Guardian - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .guardian-header { background: var(--gradient-hero); border-radius: var(--radius); padding: 30px; color: white; }
+    .alert-card { border-left: 4px solid; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 15px; margin-bottom: 10px; transition: all 0.3s; }
+    .alert-card:hover { transform: translateX(5px); }
+    .alert-card.critical { border-left-color: var(--danger); background: rgba(231,76,60,0.05); }
+    .alert-card.warning { border-left-color: var(--warning); background: rgba(243,156,18,0.05); }
+    .alert-card.info { border-left-color: var(--info); background: rgba(52,152,219,0.05); }
+    .pulse-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+    .pulse-dot.active { background: var(--success); }
+    .pulse-dot.alert { background: var(--danger); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .rule-card { border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-sm); padding: 15px; margin-bottom: 10px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="guardian-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-shield-check"></i> AI Heritage Guardian</h2>
+            <p class="mb-0 opacity-75">Monitoreo inteligente 24/7 con IA predictiva</p>
+        </div>
+        <div class="text-end">
+            <div><span class="pulse-dot active"></span> Sistema Activo</div>
+            <small class="opacity-75">{{ stats.edificios_monitorizados }} edificios monitorizados</small>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--success);">
+            <h2 style="color:var(--success);">{{ stats.total_reglas }}</h2>
+            <p class="text-muted mb-0">Reglas Activas</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--danger);">
+            <h2 style="color:var(--danger);">{{ stats.alertas_criticas }}</h2>
+            <p class="text-muted mb-0">Alertas Criticas</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--warning);">
+            <h2 style="color:var(--warning);">{{ stats.alertas_warning }}</h2>
+            <p class="text-muted mb-0">Advertencias</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card p-4 text-center" style="border-left:4px solid var(--info);">
+            <h2 style="color:var(--info);">{{ reglas.count }}</h2>
+            <p class="text-muted mb-0">Total Reglas</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="glass-card p-4 mb-4">
+            <div class="d-flex justify-content-between mb-3">
+                <h5><i class="bi bi-bell"></i> Alertas Pendientes</h5>
+                <button class="btn btn-sm btn-outline-success" onclick="location.reload()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            {% for a in alertas %}
+            <div class="alert-card {{ a.severidad }}">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>{{ a.titulo }}</strong>
+                        <p class="mb-1">{{ a.mensaje }}</p>
+                        <small class="text-muted">{{ a.edificio.nombre }} - {{ a.fecha|date:"d/m/Y H:i" }}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-{{ a.severidad|yesno:'danger,warning,info' }}">{{ a.get_severidad_display }}</span>
+                        {% if not a.resuelta %}
+                        <form method="post" class="mt-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="resolver_alerta">
+                            <input type="hidden" name="alerta_id" value="{{ a.pk }}">
+                            <button class="btn btn-sm btn-outline-success"><i class="bi bi-check-lg"></i> Resolver</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-4">
+                <i class="bi bi-shield-check fs-1 text-success"></i>
+                <p class="text-success mt-2">Sistema operativo. No hay alertas pendientes.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="glass-card p-4">
+            <h5><i class="bi bi-list-check"></i> Reglas Guardian</h5>
+            {% for r in reglas %}
+            <div class="rule-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>{{ r.nombre }}</strong>
+                        <p class="mb-0 small text-muted">{{ r.descripcion }}</p>
+                    </div>
+                    <span class="badge bg-{{ r.severidad|yesno:'danger,warning' }}">{{ r.get_tipo_sensor_display }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass-card p-4">
+            <h5><i class="bi bi-plus-circle"></i> Nueva Regla</h5>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="crear_regla">
+                <div class="mb-3">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" name="nombre" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo Sensor</label>
+                    <select name="tipo_sensor" class="form-select">
+                        <option value="temperatura">Temperatura</option>
+                        <option value="humedad">Humedad</option>
+                        <option value="vibracion">Vibracion</option>
+                        <option value="co2">CO2</option>
+                        <option value="ruido">Ruido</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Condicion (JSON)</label>
+                    <input type="text" name="condicion" class="form-control" placeholder='{"min": 10, "max": 30}'>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Severidad</label>
+                    <select name="severidad" class="form-select">
+                        <option value="warning">Advertencia</option>
+                        <option value="critical">Critica</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Edificios</label>
+                    <select name="edificios" class="form-select" multiple>
+                        {% for e in edificios %}<option value="{{ e.pk }}">{{ e.nombre }}</option>{% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus"></i> Crear Regla</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

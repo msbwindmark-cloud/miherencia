@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Crear Desafio - SmartHeritage{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-plus-circle" style="color:var(--gold);"></i> Crear Desafio</h2>
+        <p class="text-muted mb-0">Crea un nuevo desafio gamificado</p>
+    </div>
+    <a href="{% url 'monitor:desafios' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="glass-card p-4">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Titulo</label>
+                    <input type="text" name="titulo" class="form-control" placeholder="Ej: Resuelve 5 alertas esta semana" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Descripcion</label>
+                    <textarea name="descripcion" class="form-control" rows="3" placeholder="Describe el desafio..."></textarea>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Tipo</label>
+                        <select name="tipo" class="form-select">
+                            <option value="diario">Diario</option>
+                            <option value="semanal">Semanal</option>
+                            <option value="mensual">Mensual</option>
+                            <option value="especial">Especial</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Accion Requerida</label>
+                        <select name="accion_requerida" class="form-select">
+                            <option value="resolver_alerta">Resolver Alerta</option>
+                            <option value="registrar_lectura">Registrar Lectura</option>
+                            <option value="crear_edificio">Crear Edificio</option>
+                            <option value="generar_informe">Generar Informe</option>
+                            <option value="login_diario">Login Diario</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Objetivo (cantidad)</label>
+                        <input type="number" name="objetivo" class="form-control" value="1" min="1">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Puntos Recompensa</label>
+                        <input type="number" name="puntos" class="form-control" value="10" min="1">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-lg w-100" style="background:var(--gradient-accent); color:white;">
+                    <i class="bi bi-trophy"></i> Crear Desafio
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

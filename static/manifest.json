@@ -1,7 +1,7 @@
 {
-    "name": "SmartHeritage - Patrimonio Historico",
+    "name": "SmartHeritage - Patrimonio Historico Inteligente",
     "short_name": "SmartHeritage",
-    "description": "Aplicacion unica para monitorizacion y preservacion de edificios historicos",
+    "description": "Aplicacion unica para monitorizacion, preservacion e inteligencia artificial de edificios historicos",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0f0f23",
@@ -9,6 +9,8 @@
     "orientation": "any",
     "scope": "/",
     "lang": "es",
+    "categories": ["education", "utilities", "business"],
+    "dir": "ltr",
     "icons": [
         {
             "src": "/static/img/icon-192.png",
@@ -21,24 +23,41 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any maskable"
+        },
+        {
+            "src": "/static/img/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
         }
     ],
-    "categories": ["education", "utilities"],
     "shortcuts": [
         {
             "name": "Dashboard",
             "url": "/",
-            "description": "Vista principal"
+            "description": "Vista principal del sistema"
         },
         {
-            "name": "Mapa",
+            "name": "Mapa Global",
             "url": "/mapa/",
-            "description": "Mapa global"
+            "description": "Mapa con todos los edificios"
         },
         {
-            "name": "Alertas",
+            "name": "Alertas Activas",
             "url": "/alertas/",
-            "description": "Ver alertas activas"
+            "description": "Ver alertas activas del sistema"
+        },
+        {
+            "name": "Sensores",
+            "url": "/tiempo-real/",
+            "description": "Dashboard en tiempo real"
+        },
+        {
+            "name": "Gamificacion",
+            "url": "/gamificacion/",
+            "description": "Leaderboard y logros"
         }
-    ]
+    ],
+    "screenshots": [],
+    "prefer_related_applications": false
 }

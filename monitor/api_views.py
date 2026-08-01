@@ -172,7 +172,7 @@ def dashboard_api(request):
     alertas_activas = Alerta.objects.filter(resuelta=False).count()
     return Response({
         'edificios_activos': edificios.count(),
-        'salud_promedio': round(edificios.aggregate(avg=Avg('salud_score'))['avg'] or 0, 1),
+        'salud_promedio': round(sum(e.salud_score for e in edificios) / max(edificios.count(), 1), 1),
         'ingresos_mes': float(total_ingresos),
         'gastos_mes': float(total_gastos),
         'balance': float(total_ingresos - total_gastos),

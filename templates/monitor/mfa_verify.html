@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Verificar MFA - SmartHeritage{% endblock %}
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center" style="background:var(--gradient-hero);">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="text-center mb-4">
+                    <i class="bi bi-shield-check" style="font-size:3rem;color:var(--gold)"></i>
+                    <h1 class="text-white fw-bold mt-2">SmartHeritage</h1>
+                </div>
+                <div class="card-custom p-4">
+                    <div class="text-center mb-4">
+                        <h4 class="fw-bold">Verificación MFA</h4>
+                        <p class="text-muted">
+                            {% if setup_mode %}
+                                Confirma que tu autenticador funciona correctamente
+                            {% else %}
+                                Ingresa el código de tu aplicación de autenticación
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    {% if not setup_mode %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Se requiere código MFA para acceder a tu cuenta.
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <input type="text" name="code" maxlength="6" pattern="[0-9]{6}" required
+                                   class="form-control text-center" placeholder="000000"
+                                   style="font-size:2rem;letter-spacing:8px;font-weight:700;"
+                                   autocomplete="one-time-code" inputmode="numeric" autofocus>
+                        </div>
+                        <button type="submit" class="btn btn-accent w-100 py-2">
+                            <i class="bi bi-check-circle me-2"></i>Verificar
+                        </button>
+                    </form>
+
+                    {% if not setup_mode %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'monitor:login' %}" class="text-muted text-decoration-none">
+                            <i class="bi bi-arrow-left me-1"></i>Volver al login
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Cotización - SmartHeritage</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { background: #f4f6f9; font-family: 'Inter', sans-serif; }
+        .hero-quote { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); padding: 60px 0; }
+    </style>
+</head>
+<body>
+    <div class="hero-quote text-center text-white">
+        <div class="container">
+            <i class="bi bi-building-columns" style="font-size:3rem;color:#d4a853;"></i>
+            <h1 class="fw-bold mt-2">SmartHeritage</h1>
+            <p class="text-white-50">Cotización de servicios de patrimonio</p>
+        </div>
+    </div>
+
+    <div class="container py-5">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-sm mb-4" style="border-radius:16px;border:none;">
+                    <div class="card-body p-5">
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <div>
+                                <h2 class="fw-bold" style="color:#1a1a2e;">{{ cotizacion.titulo }}</h2>
+                                <p class="text-muted mb-0">Preparado para: {{ cotizacion.cliente_nombre }}</p>
+                            </div>
+                            <div>
+                                {% if cotizacion.estado == 'enviada' %}
+                                    <span class="badge bg-primary fs-6">Enviada</span>
+                                {% elif cotizacion.estado == 'aceptada' %}
+                                    <span class="badge bg-success fs-6">Aceptada</span>
+                                {% elif cotizacion.estado == 'rechazada' %}
+                                    <span class="badge bg-danger fs-6">Rechazada</span>
+                                {% elif cotizacion.estado == 'expirada' %}
+                                    <span class="badge bg-warning text-dark fs-6">Expirada</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if cotizacion.descripcion %}
+                        <div class="p-3 rounded mb-4" style="background:#f8f9fa;border-left:3px solid #e94560;">
+                            {{ cotizacion.descripcion|linebreaksbr }}
+                        </div>
+                        {% endif %}
+
+                        {% if cotizacion.edificio %}
+                        <p class="mb-3"><i class="bi bi-building me-2"></i><strong>Edificio:</strong> {{ cotizacion.edificio.nombre }}</p>
+                        {% endif %}
+
+                        <div class="table-responsive mb-4">
+                            <table class="table mb-0">
+                                <thead style="background:#1a1a2e;color:#fff;">
+                                    <tr>
+                                        <th>Concepto</th>
+                                        <th class="text-center">Cantidad</th>
+                                        <th class="text-end">Precio Unit.</th>
+                                        <th class="text-end">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                    <tr>
+                                        <td>{{ item.concepto }}</td>
+                                        <td class="text-center">{{ item.cantidad }}</td>
+                                        <td class="text-end">€{{ item.precio_unitario|floatformat:2 }}</td>
+                                        <td class="text-end fw-bold">€{{ item.subtotal|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background:#f8f9fa;">
+                                        <td colspan="3" class="text-end fw-bold fs-5">TOTAL:</td>
+                                        <td class="text-end fw-bold fs-4" style="color:#d4a853;">€{{ cotizacion.total|floatformat:2 }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        {% if cotizacion.fecha_expiracion %}
+                        <p class="text-muted small mb-4">
+                            <i class="bi bi-clock me-1"></i>
+                            Esta cotización expira el {{ cotizacion.fecha_expiracion|date:'d/m/Y' }}
+                            {% if cotizacion.dias_restantes > 0 %}({{ cotizacion.dias_restantes }} días restantes){% endif %}
+                        </p>
+                        {% endif %}
+
+                        {% if cotizacion.estado == 'enviada' %}
+                        <div class="text-center mt-4">
+                            <h5 class="fw-bold mb-3">¿Qué deseas hacer con esta cotización?</h5>
+                            <div class="d-flex justify-content-center gap-3">
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="aceptar">
+                                    <button type="submit" class="btn btn-success btn-lg px-5 py-3" style="border-radius:12px;"
+                                            onclick="return confirm('¿Aceptar esta cotización?')">
+                                        <i class="bi bi-check-circle me-2"></i>Aceptar
+                                    </button>
+                                </form>
+                                <button class="btn btn-outline-danger btn-lg px-5 py-3" style="border-radius:12px;"
+                                        onclick="showRechazarModal()">
+                                    <i class="bi bi-x-circle me-2"></i>Rechazar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="modal fade" id="rechazarModal" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content" style="border-radius:16px;">
+                                    <div class="modal-header" style="background:#e94560;color:#fff;">
+                                        <h5 class="modal-title">Rechazar Cotización</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="rechazar">
+                                        <div class="modal-body">
+                                            <p>¿Por qué deseas rechazar esta cotización? (Opcional)</p>
+                                            <textarea name="motivo" class="form-control" rows="3" placeholder="Motivo del rechazo..."></textarea>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-danger">Confirmar Rechazo</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if cotizacion.estado == 'aceptada' %}
+                        <div class="text-center mt-4 p-4 rounded" style="background:#d4edda;">
+                            <i class="bi bi-check-circle-fill text-success" style="font-size:3rem;"></i>
+                            <h4 class="fw-bold text-success mt-2">¡Cotización Aceptada!</h4>
+                            <p class="text-muted">Gracias por confiar en SmartHeritage. Nos pondremos en contacto contigo pronto.</p>
+                        </div>
+                        {% endif %}
+
+                        {% if cotizacion.estado == 'rechazada' %}
+                        <div class="text-center mt-4 p-4 rounded" style="background:#f8d7da;">
+                            <i class="bi bi-x-circle-fill text-danger" style="font-size:3rem;"></i>
+                            <h4 class="fw-bold text-danger mt-2">Cotización Rechazada</h4>
+                            <p class="text-muted">Si tienes dudas, no dudes en contactarnos.</p>
+                        </div>
+                        {% endif %}
+
+                        {% if cotizacion.estado == 'expirada' %}
+                        <div class="text-center mt-4 p-4 rounded" style="background:#fff3cd;">
+                            <i class="bi bi-clock-fill text-warning" style="font-size:3rem;"></i>
+                            <h4 class="fw-bold text-warning mt-2">Cotización Expirada</h4>
+                            <p class="text-muted">Esta cotización ya no es válida. Contacta con nosotros para recibir una nueva.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <small class="text-muted">
+                        SmartHeritage &copy; 2026 - Monitoreo inteligente de patrimonio histórico
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    function showRechazarModal() {
+        new bootstrap.Modal(document.getElementById('rechazarModal')).show();
+    }
+    </script>
+</body>
+</html>

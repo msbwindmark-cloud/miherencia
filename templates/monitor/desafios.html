@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Desafios Gamificados - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .challenge-card { border: 2px solid transparent; border-radius: var(--radius); overflow: hidden; transition: all 0.3s; }
+    .challenge-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-glow); }
+    .challenge-card.active { border-color: var(--accent); }
+    .challenge-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .progress-bar-custom { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; background: var(--gradient-accent); transition: width 0.5s ease; }
+    .rank-badge { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; }
+    @keyframes celebrate { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+    .completed { animation: celebrate 0.5s; }
+    .streak-badge { background: linear-gradient(135deg, #f39c12, #e74c3c); padding: 4px 12px; border-radius: 20px; color: white; font-size: 0.8rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-trophy" style="color:var(--gold);"></i> Desafios Gamificados</h2>
+        <p class="text-muted mb-0">Completa desafios, gana puntos y sube de nivel</p>
+    </div>
+    <a href="{% url 'monitor:desafio_crear' %}" class="btn btn-outline-primary"><i class="bi bi-plus"></i> Nuevo Desafio</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <h5 class="mb-3"><i class="bi bi-fire"></i> Desafios Activos</h5>
+        <div class="row g-3 mb-4">
+            {% for d in desafios_activos %}
+            <div class="col-md-6">
+                <div class="glass-card p-4 challenge-card {% if d.tipo == 'diario' %}active{% endif %}">
+                    <div class="d-flex align-items-start">
+                        <div class="challenge-icon me-3" style="background:{{ d.color }}20; color:{{ d.color }};">
+                            <i class="bi bi-{{ d.icono }}"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="mb-1">{{ d.titulo }}</h6>
+                                <span class="badge bg-{{ d.tipo|yesno:'danger,warning,primary,info' }}">{{ d.get_tipo_display }}</span>
+                            </div>
+                            <p class="small text-muted mb-2">{{ d.descripcion }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small"><strong style="color:var(--gold);">+{{ d.puntos_recompensa }}</strong> puntos</span>
+                                <small class="text-muted">{{ d.fecha_fin|date:"d/m" }}</small>
+                            </div>
+                            <form method="post" class="mt-2">
+                                {% csrf_token %}
+                                <input type="hidden" name="desafio_id" value="{{ d.pk }}">
+                                <button class="btn btn-sm btn-outline-primary w-100"><i class="bi bi-play"></i> Participar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-4">
+                <i class="bi bi-trophy fs-1 text-muted"></i>
+                <p class="text-muted mt-2">No hay desafios activos ahora mismo</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <h5 class="mb-3"><i class="bi bi-person-check"></i> Mis Desafios</h5>
+        <div class="row g-3">
+            {% for du in mis_desafios %}
+            <div class="col-md-6">
+                <div class="glass-card p-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>{{ du.desafio.titulo }}</strong>
+                        {% if du.completado %}
+                        <span class="badge bg-success completed"><i class="bi bi-check-circle"></i> Completado</span>
+                        {% else %}
+                        <span class="small text-muted">{{ du.progreso|floatformat:0 }}%</span>
+                        {% endif %}
+                    </div>
+                    <div class="progress-bar-custom mb-2">
+                        <div class="progress-fill" style="width:{{ du.progreso }}%;"></div>
+                    </div>
+                    {% if du.puntos_ganados > 0 %}
+                    <small class="text-success">+{{ du.puntos_ganados }} puntos ganados</small>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-3">
+                <p class="text-muted">Aun no has participado en ningun desafio</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass-card p-4 mb-4">
+            <h5><i class="bi bi-bar-chart"></i> Ranking</h5>
+            {% for r in ranking %}
+            <div class="d-flex align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                <div class="rank-badge me-3" style="background:{% if forloop.counter == 1 %}var(--gold){% elif forloop.counter == 2 %}#c0c0c0{% elif forloop.counter == 3 %}#cd7f32{% else %}rgba(255,255,255,0.1){% endif %}; color:{% if forloop.counter <= 3 %}white{% else %}var(--text-secondary){% endif %};">
+                    {{ forloop.counter }}
+                </div>
+                <div class="flex-grow-1">
+                    <strong class="small">{{ r.usuario__username }}</strong>
+                </div>
+                <span class="fw-bold" style="color:var(--gold);">{{ r.total_puntos }} pts</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="glass-card p-4">
+            <h5><i class="bi bi-gift"></i> Recompensas</h5>
+            <div class="mt-3">
+                <div class="d-flex mb-3">
+                    <i class="bi bi-star-fill text-warning me-2"></i>
+                    <div><strong>100 pts</strong><br><small class="text-muted">Insignia Bronce</small></div>
+                </div>
+                <div class="d-flex mb-3">
+                    <i class="bi bi-star-fill text-secondary me-2"></i>
+                    <div><strong>500 pts</strong><br><small class="text-muted">Insignia Plata</small></div>
+                </div>
+                <div class="d-flex mb-3">
+                    <i class="bi bi-star-fill me-2" style="color:var(--gold);"></i>
+                    <div><strong>1000 pts</strong><br><small class="text-muted">Insignia Oro</small></div>
+                </div>
+                <div class="d-flex">
+                    <i class="bi bi-gem me-2" style="color:var(--accent);"></i>
+                    <div><strong>5000 pts</strong><br><small class="text-muted">Leyenda del Patrimonio</small></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

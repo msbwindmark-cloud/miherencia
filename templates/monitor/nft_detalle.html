@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}NFT - {{ nft.titulo }} - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .nft-hero { background: var(--gradient-hero); border-radius: var(--radius); padding: 40px; color: white; }
+    .nft-image-large { border-radius: var(--radius); overflow: hidden; max-height: 400px; }
+    .nft-image-large img { width: 100%; height: 100%; object-fit: cover; }
+    .price-tag { font-size: 2.5rem; font-weight: 800; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .bid-item { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 0; }
+    .bid-item:first-child { color: var(--gold); }
+    @keyframes glow { 0%, 100% { box-shadow: 0 0 20px rgba(233,69,96,0.3); } 50% { box-shadow: 0 0 40px rgba(233,69,96,0.6); } }
+    .nft-glow { animation: glow 3s infinite; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <a href="{% url 'monitor:nft_marketplace' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Marketplace</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="glass-card p-2 mb-4 nft-glow">
+            {% if nft.imagen %}
+            <div class="nft-image-large"><img src="{{ nft.imagen.url }}" alt="{{ nft.titulo }}"></div>
+            {% else %}
+            <div style="height:400px;background:var(--gradient-hero);display:flex;align-items:center;justify-content:center;">
+                <div class="text-center text-white"><i class="bi bi-image fs-1"></i><p>{{ nft.edificio.nombre }}</p></div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="glass-card p-4 mb-4">
+            <div class="d-flex justify-content-between mb-3">
+                <span class="badge {% if nft.es_subasta %}bg-danger{% else %}bg-success{% endif %} fs-6">{{ nft.get_estado_display }}</span>
+                <span class="text-muted">#{{ nft.token_id }}</span>
+            </div>
+            <h3 class="mb-2">{{ nft.titulo }}</h3>
+            <p class="text-muted">{{ nft.edificio.nombre }}</p>
+            <p class="mb-4">{{ nft.descripcion }}</p>
+
+            <div class="mb-4">
+                <small class="text-muted">Precio Actual</small>
+                <div class="price-tag">{{ nft.precio_actual|floatformat:0 }} EUR</div>
+            </div>
+
+            {% if nft.estado == 'disponible' %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="comprar">
+                <button type="submit" class="btn btn-lg w-100" style="background:var(--gradient-accent); color:white;">
+                    <i class="bi bi-cart-plus"></i> Comprar NFT
+                </button>
+            </form>
+            {% elif nft.es_subasta and nft.estado == 'en_subasta' %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="pujar">
+                <div class="input-group mb-3">
+                    <input type="number" name="monto" class="form-control" placeholder="Tu puja" min="{{ nft.precio_actual|add:'1' }}" step="0.01">
+                    <button type="submit" class="btn btn-danger">Pujar</button>
+                </div>
+            </form>
+            {% endif %}
+
+            <div class="row g-2 mt-3">
+                <div class="col-4 text-center"><small class="text-muted d-block">Visitas</small><strong>{{ nft.visitas }}</strong></div>
+                <div class="col-4 text-center"><small class="text-muted d-block">Pujas</small><strong>{{ nft.pujas }}</strong></div>
+                <div class="col-4 text-center"><small class="text-muted d-block">Creado</small><strong>{{ nft.fecha_creacion|date:"d/m" }}</strong></div>
+            </div>
+        </div>
+
+        {% if pujas %}
+        <div class="glass-card p-4">
+            <h6><i class="bi bi-list-ol"></i> Historial de Pujas</h6>
+            {% for p in pujas %}
+            <div class="bid-item">
+                <div class="d-flex justify-content-between">
+                    <span>{{ p.postor.username }}</span>
+                    <strong>{{ p.monto|floatformat:0 }} EUR</strong>
+                </div>
+                <small class="text-muted">{{ p.fecha|date:"d/m/Y H:i" }}</small>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

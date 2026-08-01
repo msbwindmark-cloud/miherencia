@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}DNA del Edificio - SmartHeritage{% endblock %}
+{% block extra_css %}
+<style>
+    .dna-container { position: relative; }
+    .dna-helix { width: 100%; height: 300px; position: relative; }
+    .radar-container { width: 100%; max-width: 400px; margin: 0 auto; }
+    .score-ring { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+    .score-ring h2 { font-size: 2rem; font-weight: 800; }
+    .fingerprint-box { background: rgba(0,0,0,0.5); border-radius: var(--radius-sm); padding: 15px; font-family: monospace; font-size: 0.7rem; color: var(--gold); word-break: break-all; letter-spacing: 1px; }
+    .slider-group { margin-bottom: 15px; }
+    .slider-group label { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .dna-strand { position: absolute; width: 100%; height: 4px; background: linear-gradient(90deg, var(--accent), var(--gold), var(--success)); border-radius: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-fingerprint" style="color:var(--accent);"></i> DNA del Edificio</h2>
+        <p class="text-muted mb-0">Fingerprint estructural unico de {{ edificio.nombre }}</p>
+    </div>
+    <a href="{% url 'monitor:edificio_detail' pk=edificio.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="glass-card p-4 mb-4 text-center">
+            <div class="score-ring mx-auto mb-3" style="border: 4px solid {% if dna.score_global >= 70 %}var(--success){% elif dna.score_global >= 40 %}var(--warning){% else %}var(--danger){% endif %};">
+                <div>
+                    <h2 class="mb-0" style="color:{% if dna.score_global >= 70 %}var(--success){% elif dna.score_global >= 40 %}var(--warning){% else %}var(--danger){% endif %};">{{ dna.score_global }}</h2>
+                    <small class="text-muted">/ 100</small>
+                </div>
+            </div>
+            <h4>{{ edificio.nombre }}</h4>
+            <span class="badge bg-{% if dna.estado_general == 'excelente' %}success{% elif dna.estado_general == 'bueno' %}primary{% elif dna.estado_general == 'regular' %}warning{% else %}danger{% endif %} fs-6">
+                {{ dna.get_estado_general_display|default:dna.estado_general|upper }}
+            </span>
+            <p class="mt-2 text-muted">Version: v{{ dna.version }} | Actualizado: {{ dna.fecha_calculo|date:"d/m/Y H:i" }}</p>
+        </div>
+
+        <div class="glass-card p-4">
+            <h5 class="mb-3"><i class="bi bi-hash"></i> Fingerprint</h5>
+            <div class="fingerprint-box">{{ dna.fingerprint }}</div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="glass-card p-4 mb-4">
+            <h5 class="mb-3"><i class="bi bi-sliders"></i> Scores</h5>
+            <form method="post">
+                {% csrf_token %}
+                <div class="slider-group">
+                    <label><span><i class="bi bi-building"></i> Estructural</span><span id="val-est">{{ dna.score_estructural|floatformat:0 }}</span></label>
+                    <input type="range" class="form-range" name="estructural" min="0" max="100" value="{{ dna.score_estructural|floatformat:'0' }}" oninput="document.getElementById('val-est').textContent=this.value">
+                </div>
+                <div class="slider-group">
+                    <label><span><i class="bi bi-leaf"></i> Ambiental</span><span id="val-amb">{{ dna.score_ambiental|floatformat:0 }}</span></label>
+                    <input type="range" class="form-range" name="ambiental" min="0" max="100" value="{{ dna.score_ambiental|floatformat:'0' }}" oninput="document.getElementById('val-amb').textContent=this.value">
+                </div>
+                <div class="slider-group">
+                    <label><span><i class="bi bi-book"></i> Historico</span><span id="val-his">{{ dna.score_historico|floatformat:0 }}</span></label>
+                    <input type="range" class="form-range" name="historico" min="0" max="100" value="{{ dna.score_historico|floatformat:'0' }}" oninput="document.getElementById('val-his').textContent=this.value">
+                </div>
+                <div class="slider-group">
+                    <label><span><i class="bi bi-universal-access"></i> Accesibilidad</span><span id="val-acc">{{ dna.score_accesibilidad|floatformat:0 }}</span></label>
+                    <input type="range" class="form-range" name="accesibilidad" min="0" max="100" value="{{ dna.score_accesibilidad|floatformat:'0' }}" oninput="document.getElementById('val-acc').textContent=this.value">
+                </div>
+                <div class="slider-group">
+                    <label><span><i class="bi bi-cpu"></i> Tecnologico</span><span id="val-tec">{{ dna.score_tecnologico|floatformat:0 }}</span></label>
+                    <input type="range" class="form-range" name="tecnologico" min="0" max="100" value="{{ dna.score_tecnologico|floatformat:'0' }}" oninput="document.getElementById('val-tec').textContent=this.value">
+                </div>
+                <div class="slider-group">
+                    <label><span><i class="bi bi-lightning"></i> Energetico</span><span id="val-ene">{{ dna.score_energetico|floatformat:0 }}</span></label>
+                    <input type="range" class="form-range" name="energetico" min="0" max="100" value="{{ dna.score_energetico|floatformat:'0' }}" oninput="document.getElementById('val-ene').textContent=this.value">
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mt-3"><i class="bi bi-save"></i> Actualizar DNA</button>
+            </form>
+        </div>
+
+        <div class="glass-card p-4">
+            <h5 class="mb-3"><i class="bi bi-bar-chart"></i> Desglose</h5>
+            <canvas id="radar-chart" height="300"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('radar-chart'), {
+    type: 'radar',
+    data: {
+        labels: ['Estructural', 'Ambiental', 'Historico', 'Accesibilidad', 'Tecnologico', 'Energetico'],
+        datasets: [{
+            label: '{{ edificio.nombre }}',
+            data: [{{ dna.score_estructural }}, {{ dna.score_ambiental }}, {{ dna.score_historico }}, {{ dna.score_accesibilidad }}, {{ dna.score_tecnologico }}, {{ dna.score_energetico }}],
+            backgroundColor: 'rgba(233,69,96,0.2)',
+            borderColor: '#e94560',
+            pointBackgroundColor: '#e94560',
+        }]
+    },
+    options: {
+        scales: { r: { beginAtZero: true, max: 100 } },
+        plugins: { legend: { display: false } }
+    }
+});
+</script>
+{% endblock %}
