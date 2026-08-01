@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es" data-bs-theme="light">
+<html lang="{{ idioma_activo|default:'es' }}" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -386,37 +386,37 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'monitor:dashboard' %}">
-                            <i class="bi bi-speedometer2"></i> Dashboard
+                            <i class="bi bi-speedometer2"></i> {{ textos.nav_dashboard|default:"Dashboard" }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'mapa_global' %}active{% endif %}" href="{% url 'monitor:mapa_global' %}">
-                            <i class="bi bi-globe-americas"></i> Mapa
+                            <i class="bi bi-globe-americas"></i> {{ textos.nav_mapa|default:"Mapa" }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if 'edificio' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'monitor:edificio_list' %}">
-                            <i class="bi bi-building"></i> Edificios
+                            <i class="bi bi-building"></i> {{ textos.nav_edificios|default:"Edificios" }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'comparativa' %}active{% endif %}" href="{% url 'monitor:comparativa' %}">
-                            <i class="bi bi-bar-chart-line"></i> Comparar
+                            <i class="bi bi-bar-chart-line"></i> {{ textos.nav_comparar|default:"Comparar" }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'dashboard_tiempo_real' %}active{% endif %}" href="{% url 'monitor:dashboard_tiempo_real' %}">
-                            <i class="bi bi-broadcast"></i> Vivo
+                            <i class="bi bi-broadcast"></i> {{ textos.nav_vivo|default:"Vivo" }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if 'alerta' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'monitor:alerta_list' %}">
-                            <i class="bi bi-bell"></i> Alertas
+                            <i class="bi bi-bell"></i> {{ textos.nav_alertas|default:"Alertas" }}
                         </a>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-gear"></i> Más
+                            <i class="bi bi-gear"></i> {{ textos.nav_mas|default:"Más" }}
                         </a>
                         <ul class="dropdown-menu shadow">
                             <li><a class="dropdown-item" href="{% url 'monitor:calendario' %}"><i class="bi bi-calendar3 me-2"></i>Calendario</a></li>
@@ -505,7 +505,7 @@
                     </li>
                     {% endif %}
                     <li class="nav-item">
-                        <a class="nav-link dark-toggle" onclick="toggleDarkMode()" title="Modo Oscuro">
+                        <a class="nav-link dark-toggle" onclick="toggleDarkMode()" title="{{ textos.nav_modo_oscuro|default:"Modo Oscuro" }}">
                             <i class="bi bi-moon-stars" id="darkIcon"></i>
                         </a>
                     </li>
@@ -515,16 +515,18 @@
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" title="Idioma">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" title="{{ textos.nav_idioma|default:"Idioma" }}">
                             <i class="bi bi-translate"></i>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
-                            <li><a class="dropdown-item" href="{% url 'monitor:cambiar_idioma' %}" onclick="event.preventDefault();document.getElementById('lang-es').submit();">🇪🇸 Espanol</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:cambiar_idioma' %}" onclick="event.preventDefault();document.getElementById('lang-en').submit();">🇬🇧 English</a></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:cambiar_idioma' %}" onclick="event.preventDefault();document.getElementById('lang-ar').submit();">🇸🇦 العربية</a></li>
+                            <li><a class="dropdown-item {% if idioma_activo == 'es' %}active{% endif %}" href="#" onclick="event.preventDefault();document.getElementById('lang-es').submit();">🇪🇸 Espanol</a></li>
+                            <li><a class="dropdown-item {% if idioma_activo == 'en' %}active{% endif %}" href="#" onclick="event.preventDefault();document.getElementById('lang-en').submit();">🇬🇧 English</a></li>
+                            <li><a class="dropdown-item {% if idioma_activo == 'fr' %}active{% endif %}" href="#" onclick="event.preventDefault();document.getElementById('lang-fr').submit();">🇫🇷 Français</a></li>
+                            <li><a class="dropdown-item {% if idioma_activo == 'ar' %}active{% endif %}" href="#" onclick="event.preventDefault();document.getElementById('lang-ar').submit();">🇸🇦 العربية</a></li>
                         </ul>
                         <form id="lang-es" method="post" action="{% url 'monitor:cambiar_idioma' %}" style="display:none;">{% csrf_token %}<input type="hidden" name="idioma" value="es"></form>
                         <form id="lang-en" method="post" action="{% url 'monitor:cambiar_idioma' %}" style="display:none;">{% csrf_token %}<input type="hidden" name="idioma" value="en"></form>
+                        <form id="lang-fr" method="post" action="{% url 'monitor:cambiar_idioma' %}" style="display:none;">{% csrf_token %}<input type="hidden" name="idioma" value="fr"></form>
                         <form id="lang-ar" method="post" action="{% url 'monitor:cambiar_idioma' %}" style="display:none;">{% csrf_token %}<input type="hidden" name="idioma" value="ar"></form>
                     </li>
                     <li class="nav-item dropdown">
@@ -532,9 +534,9 @@
                             <i class="bi bi-person-circle"></i> {{ user.get_full_name|default:user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
-                            <li><a class="dropdown-item" href="{% url 'monitor:gamificacion' %}"><i class="bi bi-trophy me-2"></i>Mis Puntos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:gamificacion' %}"><i class="bi bi-trophy me-2"></i>{{ textos.nav_mis_puntos|default:"Mis Puntos" }}</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'monitor:logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+                            <li><a class="dropdown-item" href="{% url 'monitor:logout' %}"><i class="bi bi-box-arrow-right me-2"></i>{{ textos.nav_cerrar_sesion|default:"Cerrar Sesión" }}</a></li>
                         </ul>
                     </li>
                 </ul>

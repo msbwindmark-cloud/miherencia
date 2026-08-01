@@ -160,6 +160,49 @@ def show_tour_context(request):
     return {'show_tour': show_tour}
 
 
+IDIOMAS_DISPONIBLES = {
+    'es': 'Espanol',
+    'en': 'English',
+    'fr': 'Français',
+    'ar': 'العربية',
+}
+
+
+def idioma_context(request):
+    idioma = 'es'
+    if hasattr(request, 'user') and request.user.is_authenticated:
+        try:
+            config = request.user.idioma_config
+            if config and config.idioma:
+                idioma = config.idioma
+        except Exception:
+            pass
+    idioma = request.session.get('django_language') or idioma
+    if idioma not in IDIOMAS_DISPONIBLES:
+        idioma = 'es'
+
+    try:
+        from django.utils.translation import activate
+        activate(idioma)
+    except Exception:
+        pass
+
+    textos = {}
+    try:
+        from monitor.models import TextoMultiidioma
+        for t in TextoMultiidioma.objects.all():
+            textos[t.clave] = t.traduccion(idioma)
+    except Exception:
+        pass
+
+    return {
+        'idioma_activo': idioma,
+        'idioma_nombre': IDIOMAS_DISPONIBLES.get(idioma, 'Espanol'),
+        'idiomas_disponibles': IDIOMAS_DISPONIBLES,
+        'textos': textos,
+    }
+
+
 def IslamicWidgetContext(request):
     context = {}
 

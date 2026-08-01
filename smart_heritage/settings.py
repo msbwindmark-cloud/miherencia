@@ -59,6 +59,7 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'monitor.context_processors.IslamicWidgetContext',
                 'monitor.context_processors.show_tour_context',
+                'monitor.context_processors.idioma_context',
             ],
         },
     },
@@ -154,7 +155,8 @@ CHANNEL_LAYERS = {
 LANGUAGES = [
     ('es', 'Espanol'),
     ('en', 'English'),
-    ('ar', 'Al-Arabiya'),
+    ('fr', 'Français'),
+    ('ar', 'العربية'),
 ]
 
 LOCALE_PATHS = [
@@ -164,5 +166,6 @@ LOCALE_PATHS = [
 I18N_URLS = {
     'es': '',
     'en': '/en/',
+    'fr': '/fr/',
     'ar': '/ar/',
 }

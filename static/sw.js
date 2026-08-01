@@ -1,4 +1,4 @@
-const CACHE_NAME = 'smartheritage-v3';
+const CACHE_NAME = 'smartheritage-v4';
 const urlsToCache = [
     '/',
     '/static/manifest.json',

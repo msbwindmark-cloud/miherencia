@@ -1349,6 +1349,7 @@ class ConfiguracionIdioma(models.Model):
     IDIOMA_CHOICES = [
         ('es', 'Espanol'),
         ('en', 'English'),
+        ('fr', 'Français'),
         ('ar', 'العربية'),
     ]
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='idioma_config')
@@ -2084,6 +2085,7 @@ class TextoMultiidioma(models.Model):
     clave = models.CharField(max_length=200, unique=True)
     es = models.TextField(blank=True)
     en = models.TextField(blank=True)
+    fr = models.TextField(blank=True)
     ar = models.TextField(blank=True)
 
     class Meta:

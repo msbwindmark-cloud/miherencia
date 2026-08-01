@@ -2138,9 +2138,18 @@ def calculadora_roi(request, pk):
 def cambiar_idioma(request):
     if request.method == 'POST':
         idioma = request.POST.get('idioma', 'es')
+        idiomas_validos = dict(ConfiguracionIdioma.IDIOMA_CHOICES).keys()
+        if idioma not in idiomas_validos:
+            idioma = 'es'
         config, created = ConfiguracionIdioma.objects.get_or_create(usuario=request.user)
         config.idioma = idioma
         config.save()
+        request.session['django_language'] = idioma
+        try:
+            from django.utils.translation import activate
+            activate(idioma)
+        except Exception:
+            pass
         messages.success(request, 'Idioma cambiado correctamente.')
     return redirect('monitor:dashboard')
 
@@ -3078,6 +3087,7 @@ def idiomas_view(request):
             clave=request.POST.get('clave', ''),
             es=request.POST.get('es', ''),
             en=request.POST.get('en', ''),
+            fr=request.POST.get('fr', ''),
             ar=request.POST.get('ar', ''),
         )
         messages.success(request, 'Texto multiidioma creado.')
